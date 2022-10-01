@@ -13,42 +13,43 @@ public class PlayerController : MonoBehaviour
     private const float EPSILON = 0.001f;
     private const float MAX_ANGLE_SHOVE_DEG = 90f;
 
-    [SerializeField] private int maxBounces;
-    [SerializeField] private float angleCollisionPower;
-
-    [SerializeField] private new Rigidbody rigidbody;
-    [SerializeField] private CapsuleCollider capsuleCollider;
-    [SerializeField] private Animator animator;
-
+    [Header("Camera")]
     [SerializeField] private Transform cameraPivot;
-
     [SerializeField] private float lookSensitivity = 1f;
 
-    [SerializeField] private float maxSpeed = 20f;
-
+    [Header("Physics")]
     [SerializeField] private float groundAcceleration = 1f;
-
     [SerializeField] private float airAcceleration = 1f;
-
+    [SerializeField] private float maxSpeed = 20f;
+    [SerializeField] private float jumpForce = 100f;
     [SerializeField] private float gravity = 20f;
-
     [SerializeField] private float groundSenseDistance = 0.1f;
+    [SerializeField] private int maxBounces;
+    [SerializeField] private float angleCollisionPower;
+    [SerializeField] private float groundedGravityFactor = 0f;
+    [SerializeField] private bool isSliding = false;
+    [SerializeField] private float slideSurfaceFriction = 0.5f;
+    [SerializeField] private float slideSteeringFactor = 0.5f;
 
+    [Header("Animation")]
+    [SerializeField] private Animator animator;
     [SerializeField] private float walkAnimSpeed = 1f;
     [SerializeField] private float runAnimSpeed = 10f;
     [SerializeField] private float animSpeedFactor = 10f;
+    [SerializeField] private float maxAnimSpeed = 2f;
 
-    [SerializeField] private float jumpForce = 100f;
+    private new Rigidbody rigidbody;
+    private CapsuleCollider capsuleCollider;
 
     private PlayerControls controls;
 
     private Vector3 velocity;
-
     private Vector3 lookEuler;
 
     private bool isGrounded;
-
     private Vector3 movementPlane;
+
+    private bool jumpRequested = false;
 
     private void Awake()
     {
@@ -70,6 +71,10 @@ public class PlayerController : MonoBehaviour
 
     private void Update()
     {
+        // inputs
+
+        isSliding = controls.Player.Slide.IsPressed();
+
         var lookInput = controls.Player.Look.ReadValue<Vector2>();
 
         lookEuler.x += -lookInput.y * lookSensitivity;
@@ -78,108 +83,144 @@ public class PlayerController : MonoBehaviour
         lookEuler.x = Mathf.Clamp(lookEuler.x, -90f, 90f);
         lookEuler.y = Mathf.Repeat(lookEuler.y, 360f);
 
-        var groundSensed = CastCollider(transform.position, transform.rotation, Vector3.down, groundSenseDistance, out var groundHit);
-
-        var groundVelocity = groundSensed && groundHit.rigidbody != null ? groundHit.rigidbody.GetPointVelocity(groundHit.point) : Vector3.zero;
-
-        var relativeGroundVelocity = groundSensed ? groundVelocity - velocity : Vector3.zero;
-
-        Debug.Log("groundSensed: " + groundSensed);
-        Debug.Log("groundVelocity: " + groundVelocity);
-        Debug.Log("relativeGroundVelocity: " + relativeGroundVelocity);
-        Debug.Log("velocity: " + velocity);
-
-        if (!isGrounded && relativeGroundVelocity.y < 0f)
-        {
-            groundSensed = false;
-        }
-
-        if (groundSensed)
-        {
-            isGrounded = true;
-            movementPlane = groundHit.normal;
-        }
-        else
-        {
-            isGrounded = false;
-            movementPlane = Vector3.up;
-        }
-
-        var jumped = false;
-
-        if (controls.Player.Jump.WasPressedThisFrame() && isGrounded)
-        {
-            velocity += movementPlane * jumpForce;
-            isGrounded = false;
-
-            Debug.Log("Jumped, isGrounded: " + isGrounded + ", velocity: " + velocity + ", movementPlane: " + movementPlane);
-            jumped = true;
-        }
-
-        if (groundSensed && isGrounded)
-        {
-            rigidbody.position += Vector3.down * groundHit.distance + Vector3.up * EPSILON * 2;
-            if (jumped)
-            {
-                Debug.Log("Snapped");
-            }
-        }
-
         var moveInput = controls.Player.Move.ReadValue<Vector2>();
 
-        var moveForward = Vector3.ProjectOnPlane(transform.forward, movementPlane).normalized;
-        var moveRight = Vector3.Cross(Vector3.up, moveForward).normalized;
-
-        // this is the velocity at which the player "wants" to go, based on their input
-        var idealVelocity = (moveInput.x * moveRight + moveInput.y * moveForward) * maxSpeed;
-
-        var currentPlanarVelocity = Vector3.ProjectOnPlane(velocity, movementPlane);
-
-        var accelerationCorrectionVector = idealVelocity - currentPlanarVelocity;
-
-        var acceleration = isGrounded ? groundAcceleration : airAcceleration;
-
-        var appliedAcceleration = Mathf.Min(accelerationCorrectionVector.magnitude, acceleration * Time.deltaTime) * (accelerationCorrectionVector != Vector3.zero ? accelerationCorrectionVector.normalized : Vector3.zero);
-
-        velocity += appliedAcceleration;
-
-        if (jumped)
+        if (controls.Player.Jump.WasPressedThisFrame())
         {
-            Debug.Log("Applied acceleration: " + appliedAcceleration);
+            jumpRequested = true;
         }
+
+        // non-sliding input and acceleration
+
+        if (!isSliding)
+        {
+            // movement plane basis
+            var moveForward = Vector3.ProjectOnPlane(transform.forward, movementPlane).normalized;
+            var moveRight = Vector3.Cross(Vector3.up, moveForward).normalized;
+
+            // this is the velocity at which the player "wants" to go, based on their input
+            var idealVelocity = (moveInput.x * moveRight + moveInput.y * moveForward) * maxSpeed;
+
+            var currentPlanarVelocity = Vector3.ProjectOnPlane(velocity, movementPlane);
+            var accelerationCorrectionVector = idealVelocity - currentPlanarVelocity;
+            var acceleration = isGrounded ? groundAcceleration : airAcceleration;
+
+            // the final acceleration to apply
+            var appliedAcceleration = Mathf.Min(accelerationCorrectionVector.magnitude, acceleration * Time.deltaTime) * (accelerationCorrectionVector != Vector3.zero ? accelerationCorrectionVector.normalized : Vector3.zero);
+
+            velocity += appliedAcceleration;
+        }
+
+        // sliding input and acceleration
+
+        else
+        {
+            var currentPlanarVelocity = Vector3.ProjectOnPlane(velocity, movementPlane);
+
+            // movement plane basis
+            var moveForward = currentPlanarVelocity.normalized;
+            var moveRight = Vector3.Cross(movementPlane, moveForward).normalized;
+
+            // this is the direction at which the player "wants" to go, based on their input
+            // not normalized!
+            var desiredDirection = (moveInput.x * moveRight + moveInput.y * moveForward);
+
+            // friction
+            var frictionDirection = Vector3.Cross(movementPlane, desiredDirection).normalized;
+            var frictionForce = -Vector3.Project(currentPlanarVelocity, frictionDirection) * slideSurfaceFriction;
+            var frictionAcceleration = frictionForce / rigidbody.mass * Time.deltaTime;
+
+            velocity += frictionAcceleration;
+        }
+
+        // gravity
 
         if (!isGrounded)
         {
             velocity += Vector3.down * gravity * Time.deltaTime;
-
-                Debug.Log("    Applied gravity: " + Vector3.down * gravity * Time.deltaTime);
-                Debug.Log("    Velocity: " + velocity);
         }
         else
         {
-            velocity -= Vector3.Project(velocity, movementPlane);
-                Debug.Log("    Stopped");
+            var planarGravity = Vector3.ProjectOnPlane(Vector3.down * gravity, movementPlane);
+
+            if (!isSliding)
+            {
+                planarGravity *= groundedGravityFactor;
+            }
+
+            velocity += planarGravity * Time.deltaTime;
         }
 
-        rigidbody.MovePosition(ComputeMove(velocity * Time.fixedDeltaTime, out var lastDirection));
-
-        velocity = Vector3.Project(velocity, lastDirection);
-
-            Debug.Log("    Velocity: " + velocity);
-            Debug.Log("    Last direction: " + lastDirection);
+        // camera
 
         cameraPivot.localRotation = Quaternion.Euler(lookEuler.x, 0f, 0f);
-        rigidbody.MoveRotation(Quaternion.Euler(0f, lookEuler.y, 0f));
 
-        animator.SetFloat("Speed", Vector3.ProjectOnPlane(velocity, movementPlane).magnitude / animSpeedFactor);
+        // animation
+
+        animator.SetFloat("Speed", Mathf.Min(Vector3.ProjectOnPlane(velocity, movementPlane).magnitude / animSpeedFactor, maxAnimSpeed));
         animator.SetFloat("Walk-Run", Mathf.InverseLerp(walkAnimSpeed, runAnimSpeed, velocity.magnitude));
         animator.SetBool("Airborne", !isGrounded);
+        animator.SetBool("Sliding", isSliding);
+    }
+
+    private void FixedUpdate()
+    {
+        var groundSensed = CastCollider(rigidbody.position, rigidbody.rotation, Vector3.down, groundSenseDistance, out var groundHit);
+
+        Vector3? groundVelocity =
+            groundSensed && groundHit.rigidbody != null ? groundHit.rigidbody.GetPointVelocity(groundHit.point) :
+            groundSensed && groundHit.rigidbody == null ? Vector3.zero :
+            null;
+
+        var relativeGroundVelocity = groundVelocity - velocity;
+
+        // avoid sensing new ground that is moving away from us
+        if (!isGrounded && groundSensed && relativeGroundVelocity.Value.y < EPSILON)
+        {
+            groundSensed = false;
+        }
+
+        // flag
+        isGrounded = groundSensed;
+
+        // determine movement plane
+        if (groundSensed)
+        {
+            movementPlane = groundHit.normal;
+        }
+        else
+        {
+            movementPlane = Vector3.up;
+        }
+
+        // jump
+        if (jumpRequested && isGrounded)
+        {
+            velocity += movementPlane * jumpForce;
+            isGrounded = false;
+        }
+
+        jumpRequested = false;
+
+        // snap to surface
+        if (isGrounded)
+        {
+            rigidbody.position += Vector3.down * groundHit.distance + Vector3.up * EPSILON;
+        }
+
+        // update rigidbody
+
+        Debug.DrawLine(transform.position, transform.position + velocity, Color.red);
+        rigidbody.MovePosition(ComputeMove(velocity * Time.fixedDeltaTime, out var lastDirection));
+        rigidbody.MoveRotation(Quaternion.Euler(0f, lookEuler.y, 0f));
+        velocity = Vector3.Project(velocity, lastDirection);
+        Debug.DrawLine(transform.position, transform.position + velocity, Color.blue);
     }
 
     private Vector3 ComputeMove(Vector3 desiredMovement, out Vector3 lastDirection)
     {
-        var position = transform.position;
-        var rotation = transform.rotation;
+        var position = rigidbody.position;
+        var rotation = rigidbody.rotation;
 
         var remaining = desiredMovement;
 
@@ -197,8 +238,8 @@ public class PlayerController : MonoBehaviour
                 break;
             }
 
-            // If we are overlapping with something, just exit.
-            if (hit.distance == 0)
+            // If we are overlapping with something, don't move at all
+            if (hit.distance == 0 && hit.point == Vector3.zero)
             {
                 break;
             }
