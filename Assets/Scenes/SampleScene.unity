@@ -814,11 +814,12 @@ MonoBehaviour:
   maxSpeed: 20
   groundAcceleration: 10
   airAcceleration: 10
-  gravity: 10
+  gravity: 30
   groundSenseDistance: 0.1
   walkAnimSpeed: 1
   runAnimSpeed: 15
   animSpeedFactor: 5
+  jumpForce: 10
 --- !u!1001 &1568881286
 PrefabInstance:
   m_ObjectHideFlags: 0

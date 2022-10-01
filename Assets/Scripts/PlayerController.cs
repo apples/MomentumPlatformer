@@ -24,8 +24,6 @@ public class PlayerController : MonoBehaviour
 
     [SerializeField] private float lookSensitivity = 1f;
 
-    [SerializeField] private float moveSpeed = 1f;
-
     [SerializeField] private float maxSpeed = 1f;
 
     [SerializeField] private float groundAcceleration = 1f;
@@ -39,6 +37,8 @@ public class PlayerController : MonoBehaviour
     [SerializeField] private float walkAnimSpeed = 1f;
     [SerializeField] private float runAnimSpeed = 10f;
     [SerializeField] private float animSpeedFactor = 10f;
+
+    [SerializeField] private float jumpForce = 10f;
 
     private PlayerControls controls;
 
@@ -82,7 +82,12 @@ public class PlayerController : MonoBehaviour
 
         var groundVelocity = groundSensed && groundHit.rigidbody != null ? groundHit.rigidbody.GetPointVelocity(groundHit.point) : Vector3.zero;
 
-        var relativeGroundVelocity = Vector3.ProjectOnPlane(groundSensed ? groundVelocity - rigidbody.GetPointVelocity(groundHit.point) : Vector3.zero, groundHit.normal);
+        var relativeGroundVelocity = groundSensed ? groundVelocity - velocity : Vector3.zero;
+
+        Debug.Log("groundSensed: " + groundSensed);
+        Debug.Log("groundVelocity: " + groundVelocity);
+        Debug.Log("relativeGroundVelocity: " + relativeGroundVelocity);
+        Debug.Log("velocity: " + velocity);
 
         if (!isGrounded && relativeGroundVelocity.y < 0f)
         {
@@ -93,8 +98,6 @@ public class PlayerController : MonoBehaviour
         {
             isGrounded = true;
             movementPlane = groundHit.normal;
-
-            rigidbody.position += Vector3.down * groundHit.distance;
         }
         else
         {
@@ -102,14 +105,32 @@ public class PlayerController : MonoBehaviour
             movementPlane = Vector3.up;
         }
 
-        var moveInput = controls.Player.Move.ReadValue<Vector2>() * moveSpeed;
+        var jumped = false;
 
-        var move = new Vector3(moveInput.x, 0f, moveInput.y);
+        if (controls.Player.Jump.WasPressedThisFrame() && isGrounded)
+        {
+            velocity += movementPlane * jumpForce;
+            isGrounded = false;
+
+            Debug.Log("Jumped, isGrounded: " + isGrounded + ", velocity: " + velocity + ", movementPlane: " + movementPlane);
+            jumped = true;
+        }
+
+        if (groundSensed && isGrounded)
+        {
+            rigidbody.position += Vector3.down * groundHit.distance + Vector3.up * EPSILON * 2;
+            if (jumped)
+            {
+                Debug.Log("Snapped");
+            }
+        }
+
+        var moveInput = controls.Player.Move.ReadValue<Vector2>();
 
         var moveForward = Vector3.ProjectOnPlane(transform.forward, movementPlane).normalized;
-
         var moveRight = Vector3.Cross(Vector3.up, moveForward).normalized;
 
+        // this is the velocity at which the player "wants" to go, based on their input
         var idealVelocity = (moveInput.x * moveRight + moveInput.y * moveForward) * maxSpeed;
 
         var currentPlanarVelocity = Vector3.ProjectOnPlane(velocity, movementPlane);
@@ -122,33 +143,47 @@ public class PlayerController : MonoBehaviour
 
         velocity += appliedAcceleration;
 
+        if (jumped)
+        {
+            Debug.Log("Applied acceleration: " + appliedAcceleration);
+        }
+
         if (!isGrounded)
         {
             velocity += Vector3.down * gravity * Time.deltaTime;
+
+                Debug.Log("    Applied gravity: " + Vector3.down * gravity * Time.deltaTime);
+                Debug.Log("    Velocity: " + velocity);
         }
         else
         {
             velocity -= Vector3.Project(velocity, movementPlane);
+                Debug.Log("    Stopped");
         }
+
+        rigidbody.MovePosition(ComputeMove(velocity * Time.fixedDeltaTime, out var lastDirection));
+
+        velocity = Vector3.Project(velocity, lastDirection);
+
+            Debug.Log("    Velocity: " + velocity);
+            Debug.Log("    Last direction: " + lastDirection);
 
         cameraPivot.localRotation = Quaternion.Euler(lookEuler.x, 0f, 0f);
         rigidbody.MoveRotation(Quaternion.Euler(0f, lookEuler.y, 0f));
 
-        animator.SetFloat("Speed", velocity.magnitude / animSpeedFactor);
+        animator.SetFloat("Speed", Vector3.ProjectOnPlane(velocity, movementPlane).magnitude / animSpeedFactor);
         animator.SetFloat("Walk-Run", Mathf.InverseLerp(walkAnimSpeed, runAnimSpeed, velocity.magnitude));
+        animator.SetBool("Airborne", !isGrounded);
     }
 
-    private void FixedUpdate()
-    {
-        rigidbody.MovePosition(ComputeMove(velocity * Time.fixedDeltaTime));
-    }
-
-    private Vector3 ComputeMove(Vector3 desiredMovement)
+    private Vector3 ComputeMove(Vector3 desiredMovement, out Vector3 lastDirection)
     {
         var position = transform.position;
         var rotation = transform.rotation;
 
         var remaining = desiredMovement;
+
+        lastDirection = desiredMovement.normalized;
 
         for (var bounces = 0; bounces < maxBounces && remaining.magnitude > EPSILON; ++bounces)
         {
@@ -203,6 +238,9 @@ public class PlayerController : MonoBehaviour
             {
                 remaining = projectedRemaining;
             }
+
+            // set the last direction to the direction we are moving in
+            lastDirection = remaining.normalized;
         }
 
         // We're done, player was moved as part of loop
