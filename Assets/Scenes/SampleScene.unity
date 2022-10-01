@@ -1173,19 +1173,20 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   cameraPivot: {fileID: 1854793412}
-  lookSensitivity: 1
-  groundAcceleration: 50
+  lookSensitivity: 2
+  groundAcceleration: 200
   airAcceleration: 10
-  maxSpeed: 100
+  maxSpeed: 30
   jumpForce: 30
   gravity: 50
   groundSenseDistance: 0.1
   maxBounces: 3
   angleCollisionPower: 1
   groundedGravityFactor: 0
-  isSliding: 0
-  slideSurfaceFriction: 0.5
-  slideSteeringFactor: 0.5
+  slideSteeringAngularSpeedDeg: 180
+  slideSkidAngle: 20
+  snowMassEquivalent: 5
+  carvingTurnFactor: 0.02
   animator: {fileID: 1568881289}
   walkAnimSpeed: 20
   runAnimSpeed: 50

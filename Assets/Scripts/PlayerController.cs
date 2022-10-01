@@ -27,9 +27,10 @@ public class PlayerController : MonoBehaviour
     [SerializeField] private int maxBounces;
     [SerializeField] private float angleCollisionPower;
     [SerializeField] private float groundedGravityFactor = 0f;
-    [SerializeField] private bool isSliding = false;
-    [SerializeField] private float slideSurfaceFriction = 0.5f;
-    [SerializeField] private float slideSteeringFactor = 0.5f;
+    [SerializeField] private float slideSteeringAngularSpeedDeg = 90f;
+    [SerializeField] private float slideSkidAngle = 10f;
+    [SerializeField] private float snowMassEquivalent = 0.1f;
+    [SerializeField] private float carvingTurnFactor = 0.9f;
 
     [Header("Animation")]
     [SerializeField] private Animator animator;
@@ -44,10 +45,14 @@ public class PlayerController : MonoBehaviour
     private PlayerControls controls;
 
     private Vector3 velocity;
+    private Quaternion rotation;
+
     private Vector3 lookEuler;
 
     private bool isGrounded;
-    private Vector3 movementPlane;
+    private Vector3 surfacePlane;
+
+    private bool isSliding = false;
 
     private bool jumpRequested = false;
 
@@ -69,6 +74,12 @@ public class PlayerController : MonoBehaviour
         controls.Player.Disable();
     }
 
+    private void Start()
+    {
+        velocity = Vector3.zero;
+        rotation = rigidbody.rotation;
+    }
+
     private void Update()
     {
         // inputs
@@ -76,12 +87,6 @@ public class PlayerController : MonoBehaviour
         isSliding = controls.Player.Slide.IsPressed();
 
         var lookInput = controls.Player.Look.ReadValue<Vector2>();
-
-        lookEuler.x += -lookInput.y * lookSensitivity;
-        lookEuler.y += lookInput.x * lookSensitivity;
-
-        lookEuler.x = Mathf.Clamp(lookEuler.x, -90f, 90f);
-        lookEuler.y = Mathf.Repeat(lookEuler.y, 360f);
 
         var moveInput = controls.Player.Move.ReadValue<Vector2>();
 
@@ -95,13 +100,13 @@ public class PlayerController : MonoBehaviour
         if (!isSliding)
         {
             // movement plane basis
-            var moveForward = Vector3.ProjectOnPlane(transform.forward, movementPlane).normalized;
+            var moveForward = Vector3.ProjectOnPlane(Camera.main.transform.forward, surfacePlane).normalized;
             var moveRight = Vector3.Cross(Vector3.up, moveForward).normalized;
 
             // this is the velocity at which the player "wants" to go, based on their input
             var idealVelocity = (moveInput.x * moveRight + moveInput.y * moveForward) * maxSpeed;
 
-            var currentPlanarVelocity = Vector3.ProjectOnPlane(velocity, movementPlane);
+            var currentPlanarVelocity = Vector3.ProjectOnPlane(velocity, surfacePlane);
             var accelerationCorrectionVector = idealVelocity - currentPlanarVelocity;
             var acceleration = isGrounded ? groundAcceleration : airAcceleration;
 
@@ -109,28 +114,55 @@ public class PlayerController : MonoBehaviour
             var appliedAcceleration = Mathf.Min(accelerationCorrectionVector.magnitude, acceleration * Time.deltaTime) * (accelerationCorrectionVector != Vector3.zero ? accelerationCorrectionVector.normalized : Vector3.zero);
 
             velocity += appliedAcceleration;
+
+            // rotation
+            var velocityDirection = Vector3.ProjectOnPlane(velocity, surfacePlane).normalized;
+            if (velocityDirection != Vector3.zero)
+            {
+                rotation = Quaternion.LookRotation(velocityDirection, surfacePlane);
+            }
+
+            lookEuler.x += -lookInput.y * lookSensitivity;
+            lookEuler.y += lookInput.x * lookSensitivity;
         }
 
         // sliding input and acceleration
 
         else
         {
-            var currentPlanarVelocity = Vector3.ProjectOnPlane(velocity, movementPlane);
+            // steering
+            var steeringAngularAcceleration = moveInput.x * slideSteeringAngularSpeedDeg * Time.deltaTime;
+            rotation = Quaternion.AngleAxis(steeringAngularAcceleration, rotation * Vector3.up) * rotation;
 
-            // movement plane basis
-            var moveForward = currentPlanarVelocity.normalized;
-            var moveRight = Vector3.Cross(movementPlane, moveForward).normalized;
+            // board physics
+            if (isGrounded)
+            {
+                rotation = Quaternion.LookRotation(Vector3.ProjectOnPlane(rotation * Vector3.forward, surfacePlane), surfacePlane);
 
-            // this is the direction at which the player "wants" to go, based on their input
-            // not normalized!
-            var desiredDirection = (moveInput.x * moveRight + moveInput.y * moveForward);
+                var currentPlanarVelocity = Vector3.ProjectOnPlane(velocity, surfacePlane);
+                var velocityDirection = currentPlanarVelocity.normalized;
+                var boardForward = Vector3.ProjectOnPlane(rotation * Vector3.forward, surfacePlane).normalized;
+                var boardRight = Vector3.Cross(surfacePlane, boardForward).normalized;
 
-            // friction
-            var frictionDirection = Vector3.Cross(movementPlane, desiredDirection).normalized;
-            var frictionForce = -Vector3.Project(currentPlanarVelocity, frictionDirection) * slideSurfaceFriction;
-            var frictionAcceleration = frictionForce / rigidbody.mass * Time.deltaTime;
+                var snowAngle = Vector3.SignedAngle(velocityDirection, boardForward, surfacePlane);
 
-            velocity += frictionAcceleration;
+                // carving
+                if (Mathf.Abs(snowAngle) < slideSkidAngle)
+                {
+                    // gently redirect the velocity to match the board's forward direction
+                    velocity = Quaternion.AngleAxis(snowAngle * carvingTurnFactor, surfacePlane) * velocity;
+                }
+                // skidding
+                else
+                {
+                    // model the skid as if the snow is a particle of a certain mass colliding with the side of the board
+                    var snowForce = Vector3.Project(snowMassEquivalent * -currentPlanarVelocity, boardRight);
+                    velocity += snowForce * Time.deltaTime;
+                }
+            }
+
+            lookEuler.x += -lookInput.y * lookSensitivity;
+            lookEuler.y = Mathf.Atan2(velocity.x, velocity.z) * Mathf.Rad2Deg;
         }
 
         // gravity
@@ -141,7 +173,7 @@ public class PlayerController : MonoBehaviour
         }
         else
         {
-            var planarGravity = Vector3.ProjectOnPlane(Vector3.down * gravity, movementPlane);
+            var planarGravity = Vector3.ProjectOnPlane(Vector3.down * gravity, surfacePlane);
 
             if (!isSliding)
             {
@@ -153,11 +185,14 @@ public class PlayerController : MonoBehaviour
 
         // camera
 
-        cameraPivot.localRotation = Quaternion.Euler(lookEuler.x, 0f, 0f);
+        lookEuler.x = Mathf.Clamp(lookEuler.x, -90f, 90f);
+        lookEuler.y = Mathf.Repeat(lookEuler.y, 360f);
+
+        cameraPivot.rotation = Quaternion.Euler(lookEuler.x, lookEuler.y, 0f);
 
         // animation
 
-        animator.SetFloat("Speed", Mathf.Min(Vector3.ProjectOnPlane(velocity, movementPlane).magnitude / animSpeedFactor, maxAnimSpeed));
+        animator.SetFloat("Speed", Mathf.Min(Vector3.ProjectOnPlane(velocity, surfacePlane).magnitude / animSpeedFactor, maxAnimSpeed));
         animator.SetFloat("Walk-Run", Mathf.InverseLerp(walkAnimSpeed, runAnimSpeed, velocity.magnitude));
         animator.SetBool("Airborne", !isGrounded);
         animator.SetBool("Sliding", isSliding);
@@ -186,17 +221,17 @@ public class PlayerController : MonoBehaviour
         // determine movement plane
         if (groundSensed)
         {
-            movementPlane = groundHit.normal;
+            surfacePlane = groundHit.normal;
         }
         else
         {
-            movementPlane = Vector3.up;
+            surfacePlane = Vector3.up;
         }
 
         // jump
         if (jumpRequested && isGrounded)
         {
-            velocity += movementPlane * jumpForce;
+            velocity += surfacePlane * jumpForce;
             isGrounded = false;
         }
 
@@ -212,7 +247,7 @@ public class PlayerController : MonoBehaviour
 
         Debug.DrawLine(transform.position, transform.position + velocity, Color.red);
         rigidbody.MovePosition(ComputeMove(velocity * Time.fixedDeltaTime, out var lastDirection));
-        rigidbody.MoveRotation(Quaternion.Euler(0f, lookEuler.y, 0f));
+        rigidbody.MoveRotation(rotation);
         velocity = Vector3.Project(velocity, lastDirection);
         Debug.DrawLine(transform.position, transform.position + velocity, Color.blue);
     }
