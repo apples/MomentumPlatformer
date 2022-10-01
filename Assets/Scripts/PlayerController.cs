@@ -24,13 +24,13 @@ public class PlayerController : MonoBehaviour
 
     [SerializeField] private float lookSensitivity = 1f;
 
-    [SerializeField] private float maxSpeed = 1f;
+    [SerializeField] private float maxSpeed = 20f;
 
     [SerializeField] private float groundAcceleration = 1f;
 
     [SerializeField] private float airAcceleration = 1f;
 
-    [SerializeField] private float gravity = 10f;
+    [SerializeField] private float gravity = 20f;
 
     [SerializeField] private float groundSenseDistance = 0.1f;
 
@@ -38,7 +38,7 @@ public class PlayerController : MonoBehaviour
     [SerializeField] private float runAnimSpeed = 10f;
     [SerializeField] private float animSpeedFactor = 10f;
 
-    [SerializeField] private float jumpForce = 10f;
+    [SerializeField] private float jumpForce = 100f;
 
     private PlayerControls controls;
 
