@@ -126,6 +126,10 @@ public class PlayerController : MonoBehaviour
         {
             velocity += Vector3.down * gravity * Time.deltaTime;
         }
+        else
+        {
+            velocity -= Vector3.Project(velocity, movementPlane);
+        }
 
         cameraPivot.localRotation = Quaternion.Euler(lookEuler.x, 0f, 0f);
         rigidbody.MoveRotation(Quaternion.Euler(0f, lookEuler.y, 0f));
