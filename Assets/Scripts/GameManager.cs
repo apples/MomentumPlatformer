@@ -4,8 +4,6 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 
-// Mostly copied from https://github.com/nicholas-maltbie/OpenKCC
-
 public class GameManager : MonoBehaviour
 {
     [Header("Torch")]
