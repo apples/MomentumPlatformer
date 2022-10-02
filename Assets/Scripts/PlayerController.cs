@@ -14,8 +14,12 @@ public class PlayerController : MonoBehaviour
     private const float MAX_ANGLE_SHOVE_DEG = 90f;
 
     [Header("Camera")]
-    [SerializeField] private Transform cameraPivot;
+    [SerializeField] private Transform cameraFollowTarget;
     [SerializeField] private float lookSensitivity = 1f;
+    [SerializeField] private float standingCameraDamping = 0f;
+    [SerializeField] private float walkingCameraDamping = 0.5f;
+    [SerializeField] private float slidingCameraDamping = 0.9f;
+    [SerializeField] private float cameraNaturalTilt = 15f;
 
     [Header("Physics")]
     [SerializeField] private float groundAcceleration = 1f;
@@ -50,7 +54,7 @@ public class PlayerController : MonoBehaviour
     private Vector3 velocity;
     private Quaternion rotation;
 
-    private Vector3 lookEuler;
+    private Quaternion cameraRotation;
 
     private bool isGrounded;
     private Vector3 surfacePlane;
@@ -81,6 +85,7 @@ public class PlayerController : MonoBehaviour
     {
         velocity = Vector3.zero;
         rotation = rigidbody.rotation;
+        cameraRotation = cameraFollowTarget.rotation;
     }
 
     private void Update()
@@ -125,8 +130,8 @@ public class PlayerController : MonoBehaviour
                 rotation = Quaternion.LookRotation(velocityDirection, surfacePlane);
             }
 
-            lookEuler.x += -lookInput.y * lookSensitivity;
-            lookEuler.y += lookInput.x * lookSensitivity;
+            // lookEuler.x += -lookInput.y * lookSensitivity;
+            // lookEuler.y += lookInput.x * lookSensitivity;
         }
 
         // sliding input and acceleration
@@ -164,8 +169,8 @@ public class PlayerController : MonoBehaviour
                 }
             }
 
-            lookEuler.x += -lookInput.y * lookSensitivity;
-            lookEuler.y = Mathf.Atan2(velocity.x, velocity.z) * Mathf.Rad2Deg;
+            // lookEuler.x += -lookInput.y * lookSensitivity;
+            // lookEuler.y = Mathf.Atan2(velocity.x, velocity.z) * Mathf.Rad2Deg;
         }
 
         // gravity
@@ -188,10 +193,27 @@ public class PlayerController : MonoBehaviour
 
         // camera
 
-        lookEuler.x = Mathf.Clamp(lookEuler.x, -90f, 90f);
-        lookEuler.y = Mathf.Repeat(lookEuler.y, 360f);
+        {
+            var damping =
+                isSliding ? slidingCameraDamping :
+                (moveInput != Vector2.zero) ? walkingCameraDamping
+                : standingCameraDamping;
 
-        cameraPivot.rotation = Quaternion.Euler(lookEuler.x, lookEuler.y, 0f);
+            if (damping != 0f)
+            {
+                var forward = Vector3.ProjectOnPlane(transform.forward, surfacePlane).normalized;
+                var right = Vector3.Cross(Vector3.up, forward).normalized;
+
+                var downAngle = Quaternion.AngleAxis(cameraNaturalTilt, right);
+                var idealLook = Quaternion.LookRotation(downAngle * forward, Vector3.up);
+
+                var dampFactor = 1f - Mathf.Pow(1f - Mathf.Clamp01(damping), Time.deltaTime);
+
+                cameraRotation = Quaternion.Slerp(cameraRotation, idealLook, dampFactor);
+            }
+        }
+
+        cameraFollowTarget.rotation = cameraRotation;
 
         // animation
 
