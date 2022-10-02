@@ -246,7 +246,10 @@ public class PlayerController : MonoBehaviour
         // determine movement plane
         if (groundSensed)
         {
-            surfacePlane = groundHit.normal;
+            if (groundHit.point != Vector3.zero)
+            {
+                surfacePlane = groundHit.normal;
+            }
         }
         else
         {
@@ -301,15 +304,34 @@ public class PlayerController : MonoBehaviour
             // If we are overlapping with something, make a vague attempt to fix the problem
             if (hit.distance == 0 && hit.point == Vector3.zero)
             {
-                CastCollider(position + Vector3.up * overlapCorrectionDistance, rotation, Vector3.down, overlapCorrectionDistance, out var hit2);
-
-                // if we're still overlapping something, just give up lol
-                if (hit2.distance == 0 && hit2.point == Vector3.zero)
+                if (Physics.ComputePenetration(
+                    capsuleCollider,
+                    position,
+                    rotation,
+                    hit.collider,
+                    hit.collider.transform.position,
+                    hit.collider.transform.rotation,
+                    out var direction,
+                    out var distance))
                 {
-                    break;
+                    Debug.Log($"Penetration detected: {direction}, {distance}");
+                    position += direction * distance;
+                }
+                else
+                {
+                    Debug.Log($"No penetration detected, trying terrain");
+                    CastCollider(position + Vector3.up * overlapCorrectionDistance, rotation, Vector3.down, overlapCorrectionDistance, out var hit2);
+
+                    // if we're still overlapping something, just give up lol
+                    if (hit2.distance == 0 && hit2.point == Vector3.zero)
+                    {
+                        position += -remaining.normalized * overlapCorrectionDistance;
+                        break;
+                    }
+
+                    position += Vector3.up * (overlapCorrectionDistance - hit2.distance + EPSILON);
                 }
 
-                position += Vector3.up * (overlapCorrectionDistance - hit2.distance + EPSILON);
                 continue;
             }
 
@@ -359,7 +381,7 @@ public class PlayerController : MonoBehaviour
 
     private bool CastCollider(Vector3 position, Quaternion rotation, Vector3 direction, float distance, out RaycastHit hit)
     {
-        var halfHeight = Vector3.up * (capsuleCollider.height * 0.5f - capsuleCollider.radius);
+        var halfHeight = rotation * Vector3.up * (capsuleCollider.height * 0.5f - capsuleCollider.radius);
         var p1 = rotation * (capsuleCollider.center + halfHeight) + position;
         var p2 = rotation * (capsuleCollider.center - halfHeight) + position;
 
