@@ -11,6 +11,8 @@ GameObject:
   - component: {fileID: 6274489270211804839}
   - component: {fileID: 3258599650055734320}
   - component: {fileID: 2495823055813918573}
+  - component: {fileID: 1567566108640831600}
+  - component: {fileID: 2582072405456317248}
   m_Layer: 0
   m_Name: FlameEffect
   m_TagString: Untagged
@@ -110,6 +112,47 @@ VFXRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
+--- !u!114 &1567566108640831600
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 920995629425890727}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9afdca1d0e8d8e24991b9af5890f6385, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  flameEffect: {fileID: 3258599650055734320}
+--- !u!114 &2582072405456317248
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 920995629425890727}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 846498e98ba67674dbc15b2e939e6005, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  value: {fileID: 11400000, guid: 00b226401a0697d4fa5f3f71b5d6e20b, type: 2}
+  response:
+    m_PersistentCalls:
+      m_Calls:
+      - m_Target: {fileID: 1567566108640831600}
+        m_TargetAssemblyTypeName: TorchFlame, Assembly-CSharp
+        m_MethodName: SetFlameBasedOnTime
+        m_Mode: 0
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
 --- !u!1 &9088513728353301268
 GameObject:
   m_ObjectHideFlags: 0
@@ -142,7 +185,7 @@ Transform:
   m_Children:
   - {fileID: 6274489270211804839}
   m_Father: {fileID: 0}
-  m_RootOrder: 0
+  m_RootOrder: -1
   m_LocalEulerAnglesHint: {x: -90, y: 0, z: 0}
 --- !u!33 &4811225581481698827
 MeshFilter:
