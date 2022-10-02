@@ -39,6 +39,9 @@ public class PlayerController : MonoBehaviour
     [SerializeField] private float snowMassEquivalent = 0.1f;
     [SerializeField] private float carvingTurnFactor = 0.9f;
 
+    [Header("Board")]
+    [SerializeField] private GameObject board;
+
     [Header("Animation")]
     [SerializeField] private Animator animator;
     [SerializeField] private float walkAnimSpeed = 1f;
@@ -93,6 +96,8 @@ public class PlayerController : MonoBehaviour
         // inputs
 
         isSliding = controls.Player.Slide.IsPressed();
+
+        board.SetActive(isSliding);
 
         var lookInput = controls.Player.Look.ReadValue<Vector2>();
 
