@@ -27,6 +27,9 @@ public class PlayerController : MonoBehaviour
     [SerializeField] private int maxBounces;
     [SerializeField] private float angleCollisionPower;
     [SerializeField] private float groundedGravityFactor = 0f;
+    [SerializeField] private float overlapCorrectionDistance = 0.1f;
+
+    [Header("Sliding Physics")]
     [SerializeField] private float slideSteeringAngularSpeedDeg = 90f;
     [SerializeField] private float slideSkidAngle = 10f;
     [SerializeField] private float snowMassEquivalent = 0.1f;
@@ -273,10 +276,19 @@ public class PlayerController : MonoBehaviour
                 break;
             }
 
-            // If we are overlapping with something, don't move at all
+            // If we are overlapping with something, make a vague attempt to fix the problem
             if (hit.distance == 0 && hit.point == Vector3.zero)
             {
-                break;
+                CastCollider(position + Vector3.up * overlapCorrectionDistance, rotation, Vector3.down, overlapCorrectionDistance, out var hit2);
+
+                // if we're still overlapping something, just give up lol
+                if (hit2.distance == 0 && hit2.point == Vector3.zero)
+                {
+                    break;
+                }
+
+                position += Vector3.up * (overlapCorrectionDistance - hit2.distance + EPSILON);
+                continue;
             }
 
             float percentTravelled = hit.distance / remainingDist;
