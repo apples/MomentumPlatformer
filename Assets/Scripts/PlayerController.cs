@@ -39,6 +39,9 @@ public class PlayerController : MonoBehaviour
     [SerializeField] private float animSpeedFactor = 10f;
     [SerializeField] private float maxAnimSpeed = 2f;
 
+    [Header("Other")]
+    public SOUP.FloatValue torchTimer;
+
     private new Rigidbody rigidbody;
     private CapsuleCollider capsuleCollider;
 
@@ -196,6 +199,11 @@ public class PlayerController : MonoBehaviour
         animator.SetFloat("Walk-Run", Mathf.InverseLerp(walkAnimSpeed, runAnimSpeed, velocity.magnitude));
         animator.SetBool("Airborne", !isGrounded);
         animator.SetBool("Sliding", isSliding);
+
+
+        // Torch
+        torchTimer.Value -= Time.deltaTime;
+
     }
 
     private void FixedUpdate()
