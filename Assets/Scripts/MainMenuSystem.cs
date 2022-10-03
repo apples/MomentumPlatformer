@@ -6,6 +6,20 @@ public class MainMenuSystem : MonoBehaviour
 {
     [SerializeField] private SOUP.FloatValue enableTimerFlag;
 
+    public void Awake()
+    {
+        AudioSource[] sources = GameObject.FindObjectsOfType<AudioSource>();
+        if(sources.Length > 1)
+        {
+            Destroy(sources[1]);
+        }
+        else
+        {
+            DontDestroyOnLoad(GameObject.Find("Music"));
+        }
+        
+    }
+
     public void PlayGame()
     {
         enableTimerFlag.Value = 1;
