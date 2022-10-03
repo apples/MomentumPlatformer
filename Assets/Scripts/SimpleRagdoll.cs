@@ -59,6 +59,7 @@ public class SimpleRagdoll : MonoBehaviour
         }
 
         animator.enabled = true;
+        animator.Rebind();
 
         IsRagdolling = false;
     }

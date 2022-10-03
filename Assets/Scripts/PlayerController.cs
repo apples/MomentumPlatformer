@@ -447,14 +447,23 @@ public class PlayerController : MonoBehaviour
     {
         if (!ragdoll.IsRagdolling) return;
         ragdoll.DisableRagdoll();
-        animator.Rebind();
         ragdollVCam.Priority = 0;
         isSliding = false;
+        rotation = Quaternion.LookRotation(Camera.main.transform.forward, surfacePlane);
+        rigidbody.rotation = rotation;
     }
 
     private void StartRagdoll(bool permanent = false)
     {
-        if (ragdoll.IsRagdolling) return;
+        if (ragdoll.IsRagdolling)
+        {
+            if (permanent)
+            {
+                ragdollTimer = 9999;
+            }
+            return;
+        }
+
         ragdollTimer = permanent ? 9999 : ragdollTime;
         ragdoll.EnableRagdoll();
         ragdoll.SetVelocity(velocity);
@@ -489,6 +498,16 @@ public class PlayerController : MonoBehaviour
         if (!isGrounded && groundSensed && relativeGroundVelocity.Value < -EPSILON)
         {
             groundSensed = false;
+        }
+
+        // tumble
+        if (!groundSensed && CastCollider(rigidbody.position, rigidbody.rotation, rigidbody.rotation * Vector3.up, groundSenseDistance, out var headHit))
+        {
+            if (headHit.point != Vector3.zero)
+            {
+                StartRagdoll();
+                return;
+            }
         }
 
         // flag
