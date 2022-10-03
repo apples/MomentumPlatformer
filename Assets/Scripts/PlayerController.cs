@@ -353,9 +353,6 @@ public class PlayerController : MonoBehaviour
 
         jumpRequested = false;
 
-        // backflip boost
-
-
         // snap to surface
         if (isGrounded)
         {

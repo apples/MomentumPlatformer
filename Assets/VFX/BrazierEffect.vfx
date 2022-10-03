@@ -20,7 +20,7 @@ MonoBehaviour:
     x: 544
     y: -190
     width: 821
-    height: 1886
+    height: 1993
 --- !u!114 &114350483966674976
 MonoBehaviour:
   m_ObjectHideFlags: 1
@@ -1007,7 +1007,7 @@ MonoBehaviour:
       m_Type:
         m_SerializableType: System.Single, mscorlib, Version=4.0.0.0, Culture=neutral,
           PublicKeyToken=b77a5c561934e089
-      m_SerializableObject: 2.5
+      m_SerializableObject: 3
     m_Space: 2147483647
   m_Property:
     name: B
@@ -1033,7 +1033,7 @@ MonoBehaviour:
   m_Children:
   - {fileID: 8926484042661614615}
   - {fileID: 8926484042661614607}
-  m_UIPosition: {x: 941, y: 723}
+  m_UIPosition: {x: 941, y: 854}
   m_UICollapsed: 0
   m_UISuperCollapsed: 0
   m_InputSlots: []
@@ -1072,7 +1072,7 @@ MonoBehaviour:
   - {fileID: 8926484042661614591}
   - {fileID: 8926484042661614593}
   - {fileID: 8926484042661614644}
-  m_UIPosition: {x: 941, y: 1003}
+  m_UIPosition: {x: 941, y: 1110}
   m_UICollapsed: 0
   m_UISuperCollapsed: 0
   m_InputSlots:
@@ -2487,7 +2487,7 @@ MonoBehaviour:
       m_Type:
         m_SerializableType: UnityEngine.Gradient, UnityEngine.CoreModule, Version=0.0.0.0,
           Culture=neutral, PublicKeyToken=null
-      m_SerializableObject: '{"colorKeys":[{"color":{"r":0.0,"g":2.7434558868408205,"b":4.0,"a":1.0},"time":0.5000076293945313},{"color":{"r":0.0,"g":0.3769633173942566,"b":3.999999523162842,"a":1.0},"time":0.6794079542160034}],"alphaKeys":[{"alpha":0.0,"time":0.0},{"alpha":0.5333333611488342,"time":0.0941176488995552},{"alpha":0.5333333611488342,"time":0.7823605537414551},{"alpha":0.0,"time":1.0}],"gradientMode":0}'
+      m_SerializableObject: '{"colorKeys":[{"color":{"r":0.0,"g":2.7434558868408205,"b":4.0,"a":1.0},"time":0.3147020637989044},{"color":{"r":0.0,"g":0.24238897860050202,"b":2.4366495609283449,"a":1.0},"time":0.6794079542160034}],"alphaKeys":[{"alpha":0.0,"time":0.0},{"alpha":0.5333333611488342,"time":0.0941176488995552},{"alpha":0.5333333611488342,"time":0.7823605537414551},{"alpha":0.0,"time":1.0}],"gradientMode":0}'
     m_Space: 2147483647
   m_Property:
     name: Color
