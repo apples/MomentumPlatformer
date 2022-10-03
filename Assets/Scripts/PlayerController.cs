@@ -5,6 +5,7 @@ using System.Linq;
 using UnityEngine;
 using UnityEngine.Audio;
 using UnityEngine.InputSystem;
+using UnityEngine.VFX;
 
 // Mostly copied from https://github.com/nicholas-maltbie/OpenKCC
 
@@ -41,6 +42,8 @@ public class PlayerController : MonoBehaviour
 
     [Header("Board")]
     [SerializeField] private GameObject board;
+    [SerializeField] private VisualEffect skidEffect;
+    [SerializeField] private float skidEffectSpawnFactor = 1f;
 
     [Header("Animation")]
     [SerializeField] private Animator animator;
@@ -48,6 +51,19 @@ public class PlayerController : MonoBehaviour
     [SerializeField] private float runAnimSpeed = 10f;
     [SerializeField] private float animSpeedFactor = 10f;
     [SerializeField] private float maxAnimSpeed = 2f;
+
+    [Header("Audio")]
+    [SerializeField] private AudioSource boardSfx;
+    [SerializeField] private float boardSfxVolumeSpeed = 10f;
+    [SerializeField] private float carveSfxMinPitch = 0.1f;
+    [SerializeField] private float carveSfxMaxPitch = 0.5f;
+    [SerializeField] private float carveSfxMinSpeed = 50f;
+    [SerializeField] private float carveSfxMaxSpeed = 200f;
+    [SerializeField] private float skidSfxMinPitch = 0.9f;
+    [SerializeField] private float skidSfxMaxPitch = 1.1f;
+    [SerializeField] private float skidSfxMinSpeed = 1f;
+    [SerializeField] private float skidSfxMaxSpeed = 100f;
+    [SerializeField] private float skidSfxDebounceTime = 0.1f;
 
     private new Rigidbody rigidbody;
     private CapsuleCollider capsuleCollider;
@@ -65,6 +81,9 @@ public class PlayerController : MonoBehaviour
     private bool isSliding = false;
 
     private bool jumpRequested = false;
+
+    private float boardSfxTargetVolume = 0f;
+    private float skidSfxRemainingDebounceTime = 0f;
 
     private void Awake()
     {
@@ -164,6 +183,19 @@ public class PlayerController : MonoBehaviour
                 {
                     // gently redirect the velocity to match the board's forward direction
                     velocity = Quaternion.AngleAxis(snowAngle * carvingTurnFactor, surfacePlane) * velocity;
+
+                    skidEffect.SetFloat("SpawnRate", 5);
+                    skidEffect.SetVector3("SpawnDirection", -currentPlanarVelocity.normalized);
+                    skidEffect.SetFloat("SpawnVelocity", currentPlanarVelocity.magnitude);
+
+                    skidSfxRemainingDebounceTime -= Time.deltaTime;
+
+                    if (skidSfxRemainingDebounceTime <= 0f)
+                    {
+                        skidSfxRemainingDebounceTime = 0f;
+                        boardSfxTargetVolume = Mathf.Clamp01(currentPlanarVelocity.magnitude / carveSfxMinSpeed);
+                        boardSfx.pitch = Mathf.Lerp(carveSfxMinPitch, carveSfxMaxPitch, Mathf.InverseLerp(carveSfxMinSpeed, carveSfxMaxSpeed, currentPlanarVelocity.magnitude));
+                    }
                 }
                 // skidding
                 else
@@ -171,12 +203,28 @@ public class PlayerController : MonoBehaviour
                     // model the skid as if the snow is a particle of a certain mass colliding with the side of the board
                     var snowForce = Vector3.Project(snowMassEquivalent * -currentPlanarVelocity, boardRight);
                     velocity += snowForce * Time.deltaTime;
+
+                    skidEffect.SetFloat("SpawnRate", snowForce.magnitude * skidEffectSpawnFactor);
+                    skidEffect.SetVector3("SpawnDirection", Vector3.Reflect(-currentPlanarVelocity.normalized, boardRight));
+                    skidEffect.SetFloat("SpawnVelocity", currentPlanarVelocity.magnitude);
+
+                    var mag = Vector3.Project(currentPlanarVelocity, boardRight).magnitude;
+                    boardSfxTargetVolume = Mathf.Clamp01(mag / skidSfxMinSpeed);
+                    boardSfx.pitch = Mathf.Lerp(skidSfxMinPitch, skidSfxMaxPitch, Mathf.InverseLerp(skidSfxMinSpeed, skidSfxMaxSpeed, mag));
+                    skidSfxRemainingDebounceTime = skidSfxDebounceTime;
                 }
+            }
+            else
+            {
+                skidEffect.SetFloat("SpawnRate", 0);
+                boardSfxTargetVolume = 0;
             }
 
             // lookEuler.x += -lookInput.y * lookSensitivity;
             // lookEuler.y = Mathf.Atan2(velocity.x, velocity.z) * Mathf.Rad2Deg;
         }
+
+        skidEffect.transform.rotation = Quaternion.identity;
 
         // gravity
 
@@ -226,6 +274,10 @@ public class PlayerController : MonoBehaviour
         animator.SetFloat("Walk-Run", Mathf.InverseLerp(walkAnimSpeed, runAnimSpeed, velocity.magnitude));
         animator.SetBool("Airborne", !isGrounded);
         animator.SetBool("Sliding", isSliding);
+
+        // audio
+
+        boardSfx.volume = Mathf.MoveTowards(boardSfx.volume, boardSfxTargetVolume, Time.deltaTime * boardSfxVolumeSpeed);
     }
 
     private void FixedUpdate()
