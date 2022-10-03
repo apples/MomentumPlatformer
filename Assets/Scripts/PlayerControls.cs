@@ -80,6 +80,15 @@ public partial class @PlayerControls : IInputActionCollection2, IDisposable
                     ""processors"": """",
                     ""interactions"": """",
                     ""initialStateCheck"": false
+                },
+                {
+                    ""name"": ""ForceRagdoll"",
+                    ""type"": ""Button"",
+                    ""id"": ""5c8ba146-46e7-4e4c-b6f7-c2d68454a7f1"",
+                    ""expectedControlType"": ""Button"",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
                 }
             ],
             ""bindings"": [
@@ -280,6 +289,17 @@ public partial class @PlayerControls : IInputActionCollection2, IDisposable
                     ""action"": ""LoadState"",
                     ""isComposite"": false,
                     ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""89c28f64-153f-4112-aa1d-bdf214c9dfcc"",
+                    ""path"": ""<Keyboard>/p"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""ForceRagdoll"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
                 }
             ]
         }
@@ -294,6 +314,7 @@ public partial class @PlayerControls : IInputActionCollection2, IDisposable
         m_Player_Slide = m_Player.FindAction("Slide", throwIfNotFound: true);
         m_Player_SaveState = m_Player.FindAction("SaveState", throwIfNotFound: true);
         m_Player_LoadState = m_Player.FindAction("LoadState", throwIfNotFound: true);
+        m_Player_ForceRagdoll = m_Player.FindAction("ForceRagdoll", throwIfNotFound: true);
     }
 
     public void Dispose()
@@ -359,6 +380,7 @@ public partial class @PlayerControls : IInputActionCollection2, IDisposable
     private readonly InputAction m_Player_Slide;
     private readonly InputAction m_Player_SaveState;
     private readonly InputAction m_Player_LoadState;
+    private readonly InputAction m_Player_ForceRagdoll;
     public struct PlayerActions
     {
         private @PlayerControls m_Wrapper;
@@ -369,6 +391,7 @@ public partial class @PlayerControls : IInputActionCollection2, IDisposable
         public InputAction @Slide => m_Wrapper.m_Player_Slide;
         public InputAction @SaveState => m_Wrapper.m_Player_SaveState;
         public InputAction @LoadState => m_Wrapper.m_Player_LoadState;
+        public InputAction @ForceRagdoll => m_Wrapper.m_Player_ForceRagdoll;
         public InputActionMap Get() { return m_Wrapper.m_Player; }
         public void Enable() { Get().Enable(); }
         public void Disable() { Get().Disable(); }
@@ -396,6 +419,9 @@ public partial class @PlayerControls : IInputActionCollection2, IDisposable
                 @LoadState.started -= m_Wrapper.m_PlayerActionsCallbackInterface.OnLoadState;
                 @LoadState.performed -= m_Wrapper.m_PlayerActionsCallbackInterface.OnLoadState;
                 @LoadState.canceled -= m_Wrapper.m_PlayerActionsCallbackInterface.OnLoadState;
+                @ForceRagdoll.started -= m_Wrapper.m_PlayerActionsCallbackInterface.OnForceRagdoll;
+                @ForceRagdoll.performed -= m_Wrapper.m_PlayerActionsCallbackInterface.OnForceRagdoll;
+                @ForceRagdoll.canceled -= m_Wrapper.m_PlayerActionsCallbackInterface.OnForceRagdoll;
             }
             m_Wrapper.m_PlayerActionsCallbackInterface = instance;
             if (instance != null)
@@ -418,6 +444,9 @@ public partial class @PlayerControls : IInputActionCollection2, IDisposable
                 @LoadState.started += instance.OnLoadState;
                 @LoadState.performed += instance.OnLoadState;
                 @LoadState.canceled += instance.OnLoadState;
+                @ForceRagdoll.started += instance.OnForceRagdoll;
+                @ForceRagdoll.performed += instance.OnForceRagdoll;
+                @ForceRagdoll.canceled += instance.OnForceRagdoll;
             }
         }
     }
@@ -430,5 +459,6 @@ public partial class @PlayerControls : IInputActionCollection2, IDisposable
         void OnSlide(InputAction.CallbackContext context);
         void OnSaveState(InputAction.CallbackContext context);
         void OnLoadState(InputAction.CallbackContext context);
+        void OnForceRagdoll(InputAction.CallbackContext context);
     }
 }

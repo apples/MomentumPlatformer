@@ -67,6 +67,11 @@ public class PlayerController : MonoBehaviour
     [SerializeField] private float skidSfxMaxSpeed = 100f;
     [SerializeField] private float skidSfxDebounceTime = 0.1f;
 
+    [Header("Ragdoll")]
+    [SerializeField] private SimpleRagdoll ragdoll;
+    [SerializeField] private float ragdollTime = 5f;
+    [SerializeField] private CinemachineVirtualCamera ragdollVCam;
+
     private new Rigidbody rigidbody;
     private CapsuleCollider capsuleCollider;
 
@@ -90,6 +95,8 @@ public class PlayerController : MonoBehaviour
     private float lastTouchedGround = 0f;
 
     private float backflipTimer = 0f;
+
+    private float ragdollTimer = 0f;
 
     private class SavedState
     {
@@ -188,10 +195,34 @@ public class PlayerController : MonoBehaviour
         velocity = Vector3.zero;
         rotation = rigidbody.rotation;
         cameraRotation = cameraFollowTarget.rotation;
+        ragdollVCam.Priority = 0;
     }
 
     private void Update()
     {
+        // ragdoll
+
+        if (ragdollTimer > 0f)
+        {
+            ragdollTimer -= Time.deltaTime;
+            if (ragdollTimer <= 0f)
+            {
+                ragdollTimer = 0f;
+                StopRagdoll();
+            }
+        }
+
+        if (controls.Player.ForceRagdoll.WasPressedThisFrame())
+        {
+            StartRagdoll();
+        }
+
+        if (ragdollTimer > 0f)
+        {
+            UpdateRagdoll();
+            return;
+        }
+
         // inputs
 
         isSliding = controls.Player.Slide.IsPressed();
@@ -396,8 +427,38 @@ public class PlayerController : MonoBehaviour
         boardSfx.volume = Mathf.MoveTowards(boardSfx.volume, boardSfxTargetVolume, Time.deltaTime * boardSfxVolumeSpeed);
     }
 
+    private void StopRagdoll()
+    {
+        if (!ragdoll.IsRagdolling) return;
+        ragdoll.DisableRagdoll();
+        animator.Rebind();
+        ragdollVCam.Priority = 0;
+    }
+
+    private void StartRagdoll()
+    {
+        if (ragdoll.IsRagdolling) return;
+        ragdollTimer = ragdollTime;
+        ragdoll.EnableRagdoll();
+        ragdoll.SetVelocity(velocity);
+        velocity = Vector3.zero;
+        ragdollVCam.Priority = 20;
+        boardSfx.volume = 0;
+    }
+
+    private void UpdateRagdoll()
+    {
+        skidEffect.SetFloat("SpawnRate", 0);
+    }
+
     private void FixedUpdate()
     {
+        if (ragdoll.IsRagdolling)
+        {
+            FixedUpdateRagdoll();
+            return;
+        }
+
         var groundSensed = CastCollider(rigidbody.position, rigidbody.rotation, rigidbody.rotation * Vector3.down, groundSenseDistance, out var groundHit);
 
         Vector3? groundVelocity =
@@ -460,6 +521,11 @@ public class PlayerController : MonoBehaviour
         rigidbody.MoveRotation(rotation);
         velocity = Vector3.Project(velocity, lastDirection);
         Debug.DrawLine(transform.position, transform.position + velocity, Color.blue);
+    }
+
+    private void FixedUpdateRagdoll()
+    {
+        throw new NotImplementedException();
     }
 
     private Vector3 ComputeMove(Vector3 desiredMovement, out Vector3 lastDirection)
