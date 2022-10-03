@@ -6,16 +6,22 @@ using UnityEngine;
 
 public class GameManager : MonoBehaviour
 {
+    public SOUP.FloatValue enableTimerFlag;
+
     [Header("Torch")]
     public SOUP.FloatValue torchTimer;
 
     private void Start()
     {
+        torchTimer.Value = 10;
     }
 
     private void Update()
     {
         // Torch
-        torchTimer.Value = Mathf.Max(torchTimer.Value - Time.deltaTime, 0);
+        if (enableTimerFlag.Value == 1)
+        {
+            torchTimer.Value = Mathf.Max(torchTimer.Value - Time.deltaTime, 0);
+        }
     }
 }
