@@ -216,6 +216,10 @@ public class PlayerController : MonoBehaviour
             }
             else
             {
+                // air spin
+                var spinAngularAcceleration = moveInput.y * slideSteeringAngularSpeedDeg * Time.deltaTime;
+                rotation = Quaternion.AngleAxis(spinAngularAcceleration, Camera.main.transform.right) * rotation;
+
                 skidEffect.SetFloat("SpawnRate", 0);
                 boardSfxTargetVolume = 0;
             }
@@ -258,7 +262,9 @@ public class PlayerController : MonoBehaviour
                 var right = Vector3.Cross(Vector3.up, forward).normalized;
 
                 var downAngle = Quaternion.AngleAxis(cameraNaturalTilt, right);
-                var idealLook = Quaternion.LookRotation(downAngle * forward, Vector3.up);
+                var idealLook =
+                    isGrounded ? Quaternion.LookRotation(downAngle * forward, Vector3.up) :
+                    Quaternion.LookRotation(downAngle * velocity.normalized, Vector3.up);
 
                 var dampFactor = 1f - Mathf.Pow(1f - Mathf.Clamp01(damping), Time.deltaTime);
 
