@@ -62,6 +62,24 @@ public partial class @PlayerControls : IInputActionCollection2, IDisposable
                     ""processors"": """",
                     ""interactions"": """",
                     ""initialStateCheck"": false
+                },
+                {
+                    ""name"": ""SaveState"",
+                    ""type"": ""Button"",
+                    ""id"": ""d3133046-55fb-40a0-8077-86bd32db8440"",
+                    ""expectedControlType"": ""Button"",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
+                },
+                {
+                    ""name"": ""LoadState"",
+                    ""type"": ""Button"",
+                    ""id"": ""22fa86f7-b386-44a6-b234-9d0dcb887dd5"",
+                    ""expectedControlType"": ""Button"",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
                 }
             ],
             ""bindings"": [
@@ -240,6 +258,28 @@ public partial class @PlayerControls : IInputActionCollection2, IDisposable
                     ""action"": ""Slide"",
                     ""isComposite"": false,
                     ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""2e7da635-aa19-405f-9d81-9318106bf0f5"",
+                    ""path"": ""<Keyboard>/f9"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""SaveState"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""d4ee5713-348e-474f-9839-ab3ac15a5033"",
+                    ""path"": ""<Keyboard>/f10"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""LoadState"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
                 }
             ]
         }
@@ -252,6 +292,8 @@ public partial class @PlayerControls : IInputActionCollection2, IDisposable
         m_Player_Look = m_Player.FindAction("Look", throwIfNotFound: true);
         m_Player_Jump = m_Player.FindAction("Jump", throwIfNotFound: true);
         m_Player_Slide = m_Player.FindAction("Slide", throwIfNotFound: true);
+        m_Player_SaveState = m_Player.FindAction("SaveState", throwIfNotFound: true);
+        m_Player_LoadState = m_Player.FindAction("LoadState", throwIfNotFound: true);
     }
 
     public void Dispose()
@@ -315,6 +357,8 @@ public partial class @PlayerControls : IInputActionCollection2, IDisposable
     private readonly InputAction m_Player_Look;
     private readonly InputAction m_Player_Jump;
     private readonly InputAction m_Player_Slide;
+    private readonly InputAction m_Player_SaveState;
+    private readonly InputAction m_Player_LoadState;
     public struct PlayerActions
     {
         private @PlayerControls m_Wrapper;
@@ -323,6 +367,8 @@ public partial class @PlayerControls : IInputActionCollection2, IDisposable
         public InputAction @Look => m_Wrapper.m_Player_Look;
         public InputAction @Jump => m_Wrapper.m_Player_Jump;
         public InputAction @Slide => m_Wrapper.m_Player_Slide;
+        public InputAction @SaveState => m_Wrapper.m_Player_SaveState;
+        public InputAction @LoadState => m_Wrapper.m_Player_LoadState;
         public InputActionMap Get() { return m_Wrapper.m_Player; }
         public void Enable() { Get().Enable(); }
         public void Disable() { Get().Disable(); }
@@ -344,6 +390,12 @@ public partial class @PlayerControls : IInputActionCollection2, IDisposable
                 @Slide.started -= m_Wrapper.m_PlayerActionsCallbackInterface.OnSlide;
                 @Slide.performed -= m_Wrapper.m_PlayerActionsCallbackInterface.OnSlide;
                 @Slide.canceled -= m_Wrapper.m_PlayerActionsCallbackInterface.OnSlide;
+                @SaveState.started -= m_Wrapper.m_PlayerActionsCallbackInterface.OnSaveState;
+                @SaveState.performed -= m_Wrapper.m_PlayerActionsCallbackInterface.OnSaveState;
+                @SaveState.canceled -= m_Wrapper.m_PlayerActionsCallbackInterface.OnSaveState;
+                @LoadState.started -= m_Wrapper.m_PlayerActionsCallbackInterface.OnLoadState;
+                @LoadState.performed -= m_Wrapper.m_PlayerActionsCallbackInterface.OnLoadState;
+                @LoadState.canceled -= m_Wrapper.m_PlayerActionsCallbackInterface.OnLoadState;
             }
             m_Wrapper.m_PlayerActionsCallbackInterface = instance;
             if (instance != null)
@@ -360,6 +412,12 @@ public partial class @PlayerControls : IInputActionCollection2, IDisposable
                 @Slide.started += instance.OnSlide;
                 @Slide.performed += instance.OnSlide;
                 @Slide.canceled += instance.OnSlide;
+                @SaveState.started += instance.OnSaveState;
+                @SaveState.performed += instance.OnSaveState;
+                @SaveState.canceled += instance.OnSaveState;
+                @LoadState.started += instance.OnLoadState;
+                @LoadState.performed += instance.OnLoadState;
+                @LoadState.canceled += instance.OnLoadState;
             }
         }
     }
@@ -370,5 +428,7 @@ public partial class @PlayerControls : IInputActionCollection2, IDisposable
         void OnLook(InputAction.CallbackContext context);
         void OnJump(InputAction.CallbackContext context);
         void OnSlide(InputAction.CallbackContext context);
+        void OnSaveState(InputAction.CallbackContext context);
+        void OnLoadState(InputAction.CallbackContext context);
     }
 }

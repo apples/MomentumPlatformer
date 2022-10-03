@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using Cinemachine;
 using UnityEngine;
 using UnityEngine.Audio;
 using UnityEngine.InputSystem;
@@ -44,6 +45,7 @@ public class PlayerController : MonoBehaviour
     [SerializeField] private GameObject board;
     [SerializeField] private VisualEffect skidEffect;
     [SerializeField] private float skidEffectSpawnFactor = 1f;
+    [SerializeField] private VisualEffect boostEffect;
 
     [Header("Animation")]
     [SerializeField] private Animator animator;
@@ -89,12 +91,86 @@ public class PlayerController : MonoBehaviour
 
     private float backflipTimer = 0f;
 
+    private class SavedState
+    {
+        public Vector3 position;
+        public Quaternion rotation;
+        public Vector3 velocity;
+        public Quaternion p_rotation;
+        public Vector3 rb_position;
+        public Quaternion rb_rotation;
+        public Quaternion cameraRotation;
+        public Vector3 camPos;
+        public Quaternion camRot;
+        public bool isGrounded;
+        public Vector3 surfacePlane;
+        public bool isSliding;
+        public float lastTouchedGround;
+        public float backflipTimer;
+    }
+
+    private SavedState savedState;
+
     private void Awake()
     {
         rigidbody = GetComponent<Rigidbody>();
         capsuleCollider = GetComponent<CapsuleCollider>();
 
         controls = new PlayerControls();
+        controls.Player.SaveState.performed += SaveState;
+        controls.Player.LoadState.performed += LoadState;
+    }
+
+    private void LoadState(InputAction.CallbackContext obj)
+    {
+        if (savedState == null)
+        {
+            return;
+        }
+
+        var pdelta = savedState.position - transform.position;
+
+        transform.position = savedState.position;
+        transform.rotation = savedState.rotation;
+        velocity = savedState.velocity;
+        rotation = savedState.p_rotation;
+        rigidbody.position = savedState.rb_position;
+        rigidbody.rotation = savedState.rb_rotation;
+        rigidbody.Move(savedState.rb_position, savedState.rb_rotation);
+        cameraRotation = savedState.cameraRotation;
+        // Camera.main.transform.position = savedState.camPos;
+        // Camera.main.transform.rotation = savedState.camRot;
+        isGrounded = savedState.isGrounded;
+        surfacePlane = savedState.surfacePlane;
+        isSliding = savedState.isSliding;
+        lastTouchedGround = savedState.lastTouchedGround;
+        backflipTimer = savedState.backflipTimer;
+
+        if (Camera.main.GetComponent<CinemachineBrain>() is CinemachineBrain brain)
+        {
+            brain.ActiveVirtualCamera.OnTargetObjectWarped(transform, pdelta);
+        }
+    }
+
+    private void SaveState(InputAction.CallbackContext obj)
+    {
+        savedState = new SavedState
+        {
+            position = transform.position,
+            rotation = transform.rotation,
+            velocity = velocity,
+            p_rotation = rotation,
+            rb_position = rigidbody.position,
+            rb_rotation = rigidbody.rotation,
+            cameraRotation = cameraRotation,
+            camPos = Camera.main.transform.position,
+            camRot = Camera.main.transform.rotation,
+            isGrounded = isGrounded,
+            surfacePlane = surfacePlane,
+            isSliding = isSliding,
+            lastTouchedGround = lastTouchedGround,
+            backflipTimer = backflipTimer,
+        };
     }
 
     private void OnEnable()
@@ -178,7 +254,14 @@ public class PlayerController : MonoBehaviour
 
                 var currentPlanarVelocity = Vector3.ProjectOnPlane(velocity, surfacePlane);
                 var velocityDirection = currentPlanarVelocity.normalized;
+
                 var boardForward = Vector3.ProjectOnPlane(rotation * Vector3.forward, surfacePlane).normalized;
+
+                if (Vector3.Dot(boardForward, currentPlanarVelocity) < -EPSILON)
+                {
+                    boardForward = -boardForward;
+                }
+
                 var boardRight = Vector3.Cross(surfacePlane, boardForward).normalized;
 
                 var snowAngle = Vector3.SignedAngle(velocityDirection, boardForward, surfacePlane);
@@ -219,9 +302,13 @@ public class PlayerController : MonoBehaviour
                     skidSfxRemainingDebounceTime = skidSfxDebounceTime;
                 }
 
-                if(backflipTimer > 1.5f)
+                if (backflipTimer != 0) Debug.Log(backflipTimer);
+
+                if(backflipTimer > 1.0f)
                 {
                     velocity += velocity.normalized * 50;
+                    boostEffect.Play();
+                    Debug.Log("Boost");
                 }
                 backflipTimer = 0f;
             }
@@ -275,6 +362,13 @@ public class PlayerController : MonoBehaviour
             if (damping != 0f)
             {
                 var forward = Vector3.ProjectOnPlane(transform.forward, surfacePlane).normalized;
+
+                var currentPlanarVelocity = Vector3.ProjectOnPlane(velocity, surfacePlane);
+                if (isSliding && Vector3.Dot(forward, currentPlanarVelocity) < -EPSILON)
+                {
+                    forward = -forward;
+                }
+
                 var right = Vector3.Cross(Vector3.up, forward).normalized;
 
                 var downAngle = Quaternion.AngleAxis(cameraNaturalTilt, right);
@@ -304,17 +398,17 @@ public class PlayerController : MonoBehaviour
 
     private void FixedUpdate()
     {
-        var groundSensed = CastCollider(rigidbody.position, rigidbody.rotation, Vector3.down, groundSenseDistance, out var groundHit);
+        var groundSensed = CastCollider(rigidbody.position, rigidbody.rotation, rigidbody.rotation * Vector3.down, groundSenseDistance, out var groundHit);
 
         Vector3? groundVelocity =
             groundSensed && groundHit.rigidbody != null ? groundHit.rigidbody.GetPointVelocity(groundHit.point) :
             groundSensed && groundHit.rigidbody == null ? Vector3.zero :
             null;
 
-        var relativeGroundVelocity = groundVelocity - velocity;
+        float? relativeGroundVelocity = groundVelocity != null ? Vector3.Dot(groundVelocity.Value - velocity, groundHit.normal) : null;
 
         // avoid sensing new ground that is moving away from us
-        if (!isGrounded && groundSensed && relativeGroundVelocity.Value.y < EPSILON)
+        if (!isGrounded && groundSensed && relativeGroundVelocity.Value < -EPSILON)
         {
             groundSensed = false;
         }
@@ -402,12 +496,10 @@ public class PlayerController : MonoBehaviour
                     out var direction,
                     out var distance))
                 {
-                    Debug.Log($"Penetration detected: {direction}, {distance}");
                     position += direction * distance;
                 }
                 else
                 {
-                    Debug.Log($"No penetration detected, trying terrain");
                     CastCollider(position + Vector3.up * overlapCorrectionDistance, rotation, Vector3.down, overlapCorrectionDistance, out var hit2);
 
                     // if we're still overlapping something, just give up lol
