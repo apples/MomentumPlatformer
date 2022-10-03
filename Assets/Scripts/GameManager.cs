@@ -51,13 +51,13 @@ public class GameManager : MonoBehaviour
     {
         Debug.Log("You win!");
         yield return new WaitForSeconds(3);
-        UnityEngine.SceneManagement.SceneManager.LoadScene("MainMenu");
+        UnityEngine.SceneManagement.SceneManager.LoadScene("Win");
     }
 
     private IEnumerator LoseCoroutine()
     {
         Debug.Log("You lose!");
         yield return new WaitForSeconds(3);
-        UnityEngine.SceneManagement.SceneManager.LoadScene("MainMenu");
+        UnityEngine.SceneManagement.SceneManager.LoadScene("Lose");
     }
 }

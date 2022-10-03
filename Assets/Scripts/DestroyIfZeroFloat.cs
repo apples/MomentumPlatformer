@@ -5,10 +5,11 @@ using UnityEngine;
 public class DestroyIfZeroFloat : MonoBehaviour
 {
     [SerializeField] private SOUP.FloatValue value;
+    [SerializeField] private bool invert = false;
 
     void Start()
     {
-        if (value.Value == 0)
+        if (invert ? value.Value != 0 : value.Value == 0)
         {
             Destroy(gameObject);
         }
