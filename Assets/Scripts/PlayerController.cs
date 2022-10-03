@@ -85,6 +85,8 @@ public class PlayerController : MonoBehaviour
     private float boardSfxTargetVolume = 0f;
     private float skidSfxRemainingDebounceTime = 0f;
 
+    private float lastTouchedGround = 0f;
+
     private void Awake()
     {
         rigidbody = GetComponent<Rigidbody>();
@@ -299,6 +301,14 @@ public class PlayerController : MonoBehaviour
 
         // flag
         isGrounded = groundSensed;
+        if (isGrounded)
+        {
+            lastTouchedGround = 0f;
+        }
+        else
+        {
+            lastTouchedGround += Time.deltaTime;
+        }
 
         // determine movement plane
         if (groundSensed)
@@ -314,10 +324,11 @@ public class PlayerController : MonoBehaviour
         }
 
         // jump
-        if (jumpRequested && isGrounded)
+        if (jumpRequested && lastTouchedGround < .2f)
         {
             velocity += surfacePlane * jumpForce;
             isGrounded = false;
+            lastTouchedGround = .2f;
         }
 
         jumpRequested = false;

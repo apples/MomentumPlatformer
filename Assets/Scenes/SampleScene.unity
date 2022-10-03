@@ -2988,6 +2988,14 @@ PrefabInstance:
       propertyPath: torchTimer
       value: 
       objectReference: {fileID: 11400000, guid: 186f9798cb4a1ce4797abde538e9fe9e, type: 2}
+    - target: {fileID: 6653758533952557381, guid: 860d06fe789a208448a4d2401e23b280, type: 3}
+      propertyPath: skidSfxMaxPitch
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 6653758533952557381, guid: 860d06fe789a208448a4d2401e23b280, type: 3}
+      propertyPath: skidSfxMinPitch
+      value: 0.8
+      objectReference: {fileID: 0}
     - target: {fileID: 6653758533952557382, guid: 860d06fe789a208448a4d2401e23b280, type: 3}
       propertyPath: m_RootOrder
       value: 5
