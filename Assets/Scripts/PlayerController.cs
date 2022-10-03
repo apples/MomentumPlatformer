@@ -72,6 +72,9 @@ public class PlayerController : MonoBehaviour
     [SerializeField] private float ragdollTime = 5f;
     [SerializeField] private CinemachineVirtualCamera ragdollVCam;
 
+    [Header("Misc")]
+    [SerializeField] private SOUP.Event onPause;
+
     private new Rigidbody rigidbody;
     private CapsuleCollider capsuleCollider;
 
@@ -126,6 +129,14 @@ public class PlayerController : MonoBehaviour
         controls = new PlayerControls();
         controls.Player.SaveState.performed += SaveState;
         controls.Player.LoadState.performed += LoadState;
+        controls.Player.Pause.performed += Pause;
+    }
+
+    private void Pause(InputAction.CallbackContext obj)
+    {
+        onPause.Raise();
+        boardSfx.volume = 0f;
+        boardSfxTargetVolume = 0f;
     }
 
     private void LoadState(InputAction.CallbackContext obj)
@@ -225,7 +236,10 @@ public class PlayerController : MonoBehaviour
 
         // inputs
 
-        isSliding = controls.Player.Slide.IsPressed();
+        if (controls.Player.Slide.WasPressedThisFrame())
+        {
+            isSliding = !isSliding;
+        }
 
         board.SetActive(isSliding);
 
@@ -433,12 +447,13 @@ public class PlayerController : MonoBehaviour
         ragdoll.DisableRagdoll();
         animator.Rebind();
         ragdollVCam.Priority = 0;
+        isSliding = false;
     }
 
-    private void StartRagdoll()
+    private void StartRagdoll(bool permanent = false)
     {
         if (ragdoll.IsRagdolling) return;
-        ragdollTimer = ragdollTime;
+        ragdollTimer = permanent ? 9999 : ragdollTime;
         ragdoll.EnableRagdoll();
         ragdoll.SetVelocity(velocity);
         velocity = Vector3.zero;
@@ -525,7 +540,7 @@ public class PlayerController : MonoBehaviour
 
     private void FixedUpdateRagdoll()
     {
-        throw new NotImplementedException();
+        
     }
 
     private Vector3 ComputeMove(Vector3 desiredMovement, out Vector3 lastDirection)
@@ -636,5 +651,13 @@ public class PlayerController : MonoBehaviour
         hit = hits.Where(h => h.collider.transform != transform).OrderBy(h => h.distance).FirstOrDefault();
 
         return hits.Any(h => h.collider.transform != transform);
+    }
+
+    public void CheckTimer(float timer)
+    {
+        if (timer <= 0)
+        {
+            StartRagdoll(true);
+        }
     }
 }

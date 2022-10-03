@@ -8,20 +8,56 @@ public class GameManager : MonoBehaviour
 {
     public SOUP.FloatValue enableTimerFlag;
 
-    [Header("Torch")]
     public SOUP.FloatValue torchTimer;
+
+    public SOUP.FloatValue scoreTimeValue;
+
+    private bool stopTimer = false;
 
     private void Start()
     {
         torchTimer.Value = 10;
+        scoreTimeValue.Value = 0;
     }
 
     private void Update()
     {
-        // Torch
-        if (enableTimerFlag.Value == 1)
+        if (!stopTimer)
         {
-            torchTimer.Value = Mathf.Max(torchTimer.Value - Time.deltaTime, 0);
+            // Torch
+            if (enableTimerFlag.Value == 1)
+            {
+                torchTimer.Value = Mathf.Max(torchTimer.Value - Time.deltaTime, 0);
+
+                if (torchTimer.Value == 0)
+                {
+                    stopTimer = true;
+                    StartCoroutine(LoseCoroutine());
+                }
+            }
+
+            // Score
+            scoreTimeValue.Value += Time.deltaTime;
         }
+    }
+
+    public void Win()
+    {
+        stopTimer = true;
+        StartCoroutine(WinCoroutine());
+    }
+
+    private IEnumerator WinCoroutine()
+    {
+        Debug.Log("You win!");
+        yield return new WaitForSeconds(3);
+        UnityEngine.SceneManagement.SceneManager.LoadScene("MainMenu");
+    }
+
+    private IEnumerator LoseCoroutine()
+    {
+        Debug.Log("You lose!");
+        yield return new WaitForSeconds(3);
+        UnityEngine.SceneManagement.SceneManager.LoadScene("MainMenu");
     }
 }
