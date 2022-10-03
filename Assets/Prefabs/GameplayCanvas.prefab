@@ -313,6 +313,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   value: {fileID: 11400000, guid: f33e7e30befc618418a9610fff3b0b9b, type: 2}
+  invert: 0
 --- !u!1 &1575139165928766910
 GameObject:
   m_ObjectHideFlags: 0
@@ -1079,8 +1080,9 @@ GameObject:
   - component: {fileID: 8051731889858754003}
   - component: {fileID: 5526507694708582079}
   - component: {fileID: 3734532735188999096}
+  - component: {fileID: 8017997850256303188}
   m_Layer: 5
-  m_Name: ContinueButton
+  m_Name: StartButton
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -1201,6 +1203,31 @@ MonoBehaviour:
           m_StringArgument: 
           m_BoolArgument: 0
         m_CallState: 2
+      - m_Target: {fileID: 8017997850256303188}
+        m_TargetAssemblyTypeName: SOUP.RaiseEvent, Assembly-CSharp
+        m_MethodName: Raise
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
+--- !u!114 &8017997850256303188
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3298911903589862297}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5d81e20cbea9cc840aa7c08e59d5bb33, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  event: {fileID: 11400000, guid: cc070971a2a2c0041a0ae7c5a86b863a, type: 2}
 --- !u!1 &4752843997321430810
 GameObject:
   m_ObjectHideFlags: 0

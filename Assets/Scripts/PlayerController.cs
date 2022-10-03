@@ -74,6 +74,8 @@ public class PlayerController : MonoBehaviour
 
     [Header("Misc")]
     [SerializeField] private SOUP.Event onPause;
+    [SerializeField] private Vector3 startVelocity = Vector3.zero;
+    [SerializeField] private Quaternion startRotation = Quaternion.identity;
 
     private new Rigidbody rigidbody;
     private CapsuleCollider capsuleCollider;
@@ -659,5 +661,12 @@ public class PlayerController : MonoBehaviour
         {
             StartRagdoll(true);
         }
+    }
+
+    public void Blastoff()
+    {
+        isSliding = true;
+        velocity = startVelocity;
+        rotation = startRotation;
     }
 }

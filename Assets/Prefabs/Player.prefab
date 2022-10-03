@@ -172,7 +172,7 @@ MonoBehaviour:
     ModeOverride: 0
     LensShift: {x: 0, y: 0}
     GateFit: 2
-    m_SensorSize: {x: 1.7777778, y: 1}
+    m_SensorSize: {x: 1.7779412, y: 1}
   m_Transitions:
     m_BlendHint: 0
     m_InheritPosition: 0
@@ -195,6 +195,7 @@ GameObject:
   - component: {fileID: 6653758533952557383}
   - component: {fileID: 4878112636586098815}
   - component: {fileID: 7695933734582377422}
+  - component: {fileID: 3000726719786387177}
   m_Layer: 0
   m_Name: Player
   m_TagString: Player
@@ -279,6 +280,8 @@ MonoBehaviour:
   ragdollTime: 5
   ragdollVCam: {fileID: 2902785393843965211}
   onPause: {fileID: 11400000, guid: 0de49720274caa048bdfb0947914d405, type: 2}
+  startVelocity: {x: -30, y: 0, z: 0}
+  startRotation: {x: 0, y: 0.70710677, z: 0, w: -0.70710677}
 --- !u!54 &6653758533952557380
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -350,6 +353,34 @@ MonoBehaviour:
           m_StringArgument: 
           m_BoolArgument: 0
         m_CallState: 2
+--- !u!114 &3000726719786387177
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6653758533952557369}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 31020cbc0bc2f944297bdfe3a43328aa, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  event: {fileID: 11400000, guid: cc070971a2a2c0041a0ae7c5a86b863a, type: 2}
+  response:
+    m_PersistentCalls:
+      m_Calls:
+      - m_Target: {fileID: 6653758533952557381}
+        m_TargetAssemblyTypeName: PlayerController, Assembly-CSharp
+        m_MethodName: Blastoff
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
 --- !u!1 &7027359122879802150
 GameObject:
   m_ObjectHideFlags: 0
@@ -412,7 +443,7 @@ MonoBehaviour:
     ModeOverride: 0
     LensShift: {x: 0, y: 0}
     GateFit: 2
-    m_SensorSize: {x: 1.7777778, y: 1}
+    m_SensorSize: {x: 1.7779412, y: 1}
   m_Transitions:
     m_BlendHint: 0
     m_InheritPosition: 0
