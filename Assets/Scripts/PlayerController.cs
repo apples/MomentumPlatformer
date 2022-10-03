@@ -87,6 +87,8 @@ public class PlayerController : MonoBehaviour
 
     private float lastTouchedGround = 0f;
 
+    private float backflipTimer = 0f;
+
     private void Awake()
     {
         rigidbody = GetComponent<Rigidbody>();
@@ -158,6 +160,7 @@ public class PlayerController : MonoBehaviour
 
             // lookEuler.x += -lookInput.y * lookSensitivity;
             // lookEuler.y += lookInput.x * lookSensitivity;
+            backflipTimer = 0f;
         }
 
         // sliding input and acceleration
@@ -215,6 +218,12 @@ public class PlayerController : MonoBehaviour
                     boardSfx.pitch = Mathf.Lerp(skidSfxMinPitch, skidSfxMaxPitch, Mathf.InverseLerp(skidSfxMinSpeed, skidSfxMaxSpeed, mag));
                     skidSfxRemainingDebounceTime = skidSfxDebounceTime;
                 }
+
+                if(backflipTimer > 1.5f)
+                {
+                    velocity += velocity.normalized * 50;
+                }
+                backflipTimer = 0f;
             }
             else
             {
@@ -224,6 +233,11 @@ public class PlayerController : MonoBehaviour
 
                 skidEffect.SetFloat("SpawnRate", 0);
                 boardSfxTargetVolume = 0;
+
+                if(moveInput.y != 0)
+                {
+                    backflipTimer += Time.deltaTime;
+                }
             }
 
             // lookEuler.x += -lookInput.y * lookSensitivity;
@@ -338,6 +352,9 @@ public class PlayerController : MonoBehaviour
         }
 
         jumpRequested = false;
+
+        // backflip boost
+
 
         // snap to surface
         if (isGrounded)
