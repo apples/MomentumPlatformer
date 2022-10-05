@@ -432,6 +432,34 @@ public partial class @PlayerControls : IInputActionCollection2, IDisposable
                     ""isPartOfComposite"": false
                 }
             ]
+        },
+        {
+            ""name"": ""Special"",
+            ""id"": ""e31bfd4a-a39f-4f15-9010-798437ae3461"",
+            ""actions"": [
+                {
+                    ""name"": ""Mute Music"",
+                    ""type"": ""Button"",
+                    ""id"": ""f89abc03-5d2e-4c52-8dfc-463abe5354d6"",
+                    ""expectedControlType"": ""Button"",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
+                }
+            ],
+            ""bindings"": [
+                {
+                    ""name"": """",
+                    ""id"": ""8624b091-c489-4867-bef6-5c211159acb2"",
+                    ""path"": ""<Keyboard>/m"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""Mute Music"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                }
+            ]
         }
     ],
     ""controlSchemes"": []
@@ -446,6 +474,9 @@ public partial class @PlayerControls : IInputActionCollection2, IDisposable
         m_Player_LoadState = m_Player.FindAction("LoadState", throwIfNotFound: true);
         m_Player_ForceRagdoll = m_Player.FindAction("ForceRagdoll", throwIfNotFound: true);
         m_Player_Pause = m_Player.FindAction("Pause", throwIfNotFound: true);
+        // Special
+        m_Special = asset.FindActionMap("Special", throwIfNotFound: true);
+        m_Special_MuteMusic = m_Special.FindAction("Mute Music", throwIfNotFound: true);
     }
 
     public void Dispose()
@@ -590,6 +621,39 @@ public partial class @PlayerControls : IInputActionCollection2, IDisposable
         }
     }
     public PlayerActions @Player => new PlayerActions(this);
+
+    // Special
+    private readonly InputActionMap m_Special;
+    private ISpecialActions m_SpecialActionsCallbackInterface;
+    private readonly InputAction m_Special_MuteMusic;
+    public struct SpecialActions
+    {
+        private @PlayerControls m_Wrapper;
+        public SpecialActions(@PlayerControls wrapper) { m_Wrapper = wrapper; }
+        public InputAction @MuteMusic => m_Wrapper.m_Special_MuteMusic;
+        public InputActionMap Get() { return m_Wrapper.m_Special; }
+        public void Enable() { Get().Enable(); }
+        public void Disable() { Get().Disable(); }
+        public bool enabled => Get().enabled;
+        public static implicit operator InputActionMap(SpecialActions set) { return set.Get(); }
+        public void SetCallbacks(ISpecialActions instance)
+        {
+            if (m_Wrapper.m_SpecialActionsCallbackInterface != null)
+            {
+                @MuteMusic.started -= m_Wrapper.m_SpecialActionsCallbackInterface.OnMuteMusic;
+                @MuteMusic.performed -= m_Wrapper.m_SpecialActionsCallbackInterface.OnMuteMusic;
+                @MuteMusic.canceled -= m_Wrapper.m_SpecialActionsCallbackInterface.OnMuteMusic;
+            }
+            m_Wrapper.m_SpecialActionsCallbackInterface = instance;
+            if (instance != null)
+            {
+                @MuteMusic.started += instance.OnMuteMusic;
+                @MuteMusic.performed += instance.OnMuteMusic;
+                @MuteMusic.canceled += instance.OnMuteMusic;
+            }
+        }
+    }
+    public SpecialActions @Special => new SpecialActions(this);
     public interface IPlayerActions
     {
         void OnMove(InputAction.CallbackContext context);
@@ -600,5 +664,9 @@ public partial class @PlayerControls : IInputActionCollection2, IDisposable
         void OnLoadState(InputAction.CallbackContext context);
         void OnForceRagdoll(InputAction.CallbackContext context);
         void OnPause(InputAction.CallbackContext context);
+    }
+    public interface ISpecialActions
+    {
+        void OnMuteMusic(InputAction.CallbackContext context);
     }
 }

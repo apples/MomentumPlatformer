@@ -410,6 +410,34 @@
                     "isPartOfComposite": false
                 }
             ]
+        },
+        {
+            "name": "Special",
+            "id": "e31bfd4a-a39f-4f15-9010-798437ae3461",
+            "actions": [
+                {
+                    "name": "Mute Music",
+                    "type": "Button",
+                    "id": "f89abc03-5d2e-4c52-8dfc-463abe5354d6",
+                    "expectedControlType": "Button",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                }
+            ],
+            "bindings": [
+                {
+                    "name": "",
+                    "id": "8624b091-c489-4867-bef6-5c211159acb2",
+                    "path": "<Keyboard>/m",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "Mute Music",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                }
+            ]
         }
     ],
     "controlSchemes": []
