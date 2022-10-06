@@ -30,6 +30,7 @@ public class PlayerController : MonoBehaviour
     [SerializeField] private float jumpForce = 100f;
     [SerializeField] private float gravity = 20f;
     [SerializeField] private float groundSenseDistance = 0.1f;
+    [SerializeField] private bool snapToGround = false;
     [SerializeField] private int maxBounces;
     [SerializeField] private float angleCollisionPower;
     [SerializeField] private float groundedGravityFactor = 0f;
@@ -260,7 +261,7 @@ public class PlayerController : MonoBehaviour
         {
             // movement plane basis
             var moveForward = Vector3.ProjectOnPlane(Camera.main.transform.forward, surfacePlane).normalized;
-            var moveRight = Vector3.Cross(Vector3.up, moveForward).normalized;
+            var moveRight = Vector3.Cross(surfacePlane, moveForward).normalized;
 
             // this is the velocity at which the player "wants" to go, based on their input
             var idealVelocity = (moveInput.x * moveRight + moveInput.y * moveForward) * maxSpeed;
@@ -438,6 +439,11 @@ public class PlayerController : MonoBehaviour
         animator.SetBool("Airborne", !isGrounded);
         animator.SetBool("Sliding", isSliding);
 
+        if (isSliding)
+        {
+            animator.SetFloat("Lean", moveInput.x);
+        }
+
         // audio
 
         boardSfx.volume = Mathf.MoveTowards(boardSfx.volume, boardSfxTargetVolume, Time.deltaTime * boardSfxVolumeSpeed);
@@ -487,12 +493,14 @@ public class PlayerController : MonoBehaviour
 
         var groundSensed = CastCollider(rigidbody.position, rigidbody.rotation, rigidbody.rotation * Vector3.down, groundSenseDistance, out var groundHit);
 
+        var groundHitNormal = groundSensed ? GetTrueNormal(groundHit) : Vector3.up;
+
         Vector3? groundVelocity =
             groundSensed && groundHit.rigidbody != null ? groundHit.rigidbody.GetPointVelocity(groundHit.point) :
             groundSensed && groundHit.rigidbody == null ? Vector3.zero :
             null;
-
-        float? relativeGroundVelocity = groundVelocity != null ? Vector3.Dot(groundVelocity.Value - velocity, groundHit.normal) : null;
+        
+        float? relativeGroundVelocity = groundVelocity != null ? Vector3.Dot(groundVelocity.Value - velocity, groundHitNormal) : null;
 
         // avoid sensing new ground that is moving away from us
         if (!isGrounded && groundSensed && relativeGroundVelocity.Value < -EPSILON)
@@ -501,7 +509,7 @@ public class PlayerController : MonoBehaviour
         }
 
         // tumble
-        if (!groundSensed && CastCollider(rigidbody.position, rigidbody.rotation, rigidbody.rotation * Vector3.up, groundSenseDistance, out var headHit))
+        if (isSliding && !groundSensed && CastCollider(rigidbody.position, rigidbody.rotation, rigidbody.rotation * Vector3.up, groundSenseDistance, out var headHit))
         {
             if (headHit.point != Vector3.zero)
             {
@@ -526,7 +534,7 @@ public class PlayerController : MonoBehaviour
         {
             if (groundHit.point != Vector3.zero)
             {
-                surfacePlane = groundHit.normal;
+                surfacePlane = groundHitNormal;
             }
         }
         else
@@ -545,9 +553,9 @@ public class PlayerController : MonoBehaviour
         jumpRequested = false;
 
         // snap to surface
-        if (isGrounded)
+        if (snapToGround && isGrounded)
         {
-            rigidbody.position += Vector3.down * groundHit.distance + Vector3.up * EPSILON;
+            rigidbody.position += Vector3.down * (groundHit.distance - EPSILON) + Vector3.up * EPSILON;
         }
 
         // update rigidbody
@@ -586,7 +594,7 @@ public class PlayerController : MonoBehaviour
             }
 
             // If we are overlapping with something, make a vague attempt to fix the problem
-            if (hit.distance == 0 && hit.point == Vector3.zero)
+            if (hit.distance < EPSILON)
             {
                 if (Physics.ComputePenetration(
                     capsuleCollider,
@@ -605,7 +613,7 @@ public class PlayerController : MonoBehaviour
                     CastCollider(position + Vector3.up * overlapCorrectionDistance, rotation, Vector3.down, overlapCorrectionDistance, out var hit2);
 
                     // if we're still overlapping something, just give up lol
-                    if (hit2.distance == 0 && hit2.point == Vector3.zero)
+                    if (hit2.distance < EPSILON)
                     {
                         position += -remaining.normalized * overlapCorrectionDistance;
                         break;
@@ -617,18 +625,20 @@ public class PlayerController : MonoBehaviour
                 continue;
             }
 
-            float percentTravelled = hit.distance / remainingDist;
+            float percentTravelled = (hit.distance - EPSILON) / remainingDist;
+
+            var trueNormal = GetTrueNormal(hit);
 
             // Set the fraction of remaining movement (minus some small value)
             position += remaining * percentTravelled;
             // Push slightly along normal to stop from getting caught in walls
-            position += hit.normal * EPSILON * 2;
+            position += trueNormal * EPSILON;
             // Decrease remaining movement by fraction of movement remaining
             remaining *= 1f - percentTravelled;
 
             // Only apply angular change if hitting something
             // Get angle between surface normal and remaining movement
-            var surfaceAngle = Vector3.Angle(hit.normal, remaining) - 90.0f;
+            var surfaceAngle = Vector3.Angle(trueNormal, remaining) - 90.0f;
 
             // Normalize angle between to be between 0 and 1
             // 0 means no angle, 1 means 90 degree angle
@@ -640,7 +650,7 @@ public class PlayerController : MonoBehaviour
 
             // Rotate the remaining movement to be projected along the plane 
             // of the surface hit (emulate pushing against the object)
-            var projectedRemaining = Vector3.ProjectOnPlane(remaining, hit.normal).normalized * remaining.magnitude;
+            var projectedRemaining = Vector3.ProjectOnPlane(remaining, trueNormal).normalized * remaining.magnitude;
 
             // If projected remaining movement is less than original remaining movement (so if the projection broke
             // due to float operations), then change this to just project along the vertical.
@@ -661,13 +671,35 @@ public class PlayerController : MonoBehaviour
         return position;
     }
 
+    private Vector3 GetTrueNormal(RaycastHit hit)
+    {
+        var terrain = hit.collider.GetComponent<Terrain>();
+        if (terrain != null)
+        {
+            var terrainData = terrain.terrainData;
+            var terrainPos = terrain.transform.position;
+            var angleFromUp = Vector3.Angle(Vector3.up, hit.normal);
+            var terrainCoord = new Vector2((hit.point.x - terrainPos.x) / terrainData.size.x, (hit.point.z - terrainPos.z) / terrainData.size.z);
+            var terrainHeight = terrainData.GetInterpolatedHeight(terrainCoord.x, terrainCoord.y);
+            var heightAboveSurface = hit.point.y - terrainPos.y - terrainHeight;
+            var isNotVertical = Vector3.Angle(Vector3.up, hit.normal) < 89f;
+            var isOnSurface = heightAboveSurface < EPSILON;
+            if (isNotVertical && isOnSurface)
+            {
+                return terrainData.GetInterpolatedNormal(terrainCoord.x, terrainCoord.y);
+            }
+        }
+
+        return hit.normal;
+    }
+
     private bool CastCollider(Vector3 position, Quaternion rotation, Vector3 direction, float distance, out RaycastHit hit)
     {
-        var halfHeight = rotation * Vector3.up * (capsuleCollider.height * 0.5f - capsuleCollider.radius);
+        var halfHeight = Vector3.up * (capsuleCollider.height * 0.5f - capsuleCollider.radius);
         var p1 = rotation * (capsuleCollider.center + halfHeight) + position;
         var p2 = rotation * (capsuleCollider.center - halfHeight) + position;
 
-        var hits = Physics.CapsuleCastAll(p1, p2, capsuleCollider.radius, direction, distance, ~0, QueryTriggerInteraction.Ignore);
+        var hits = Physics.CapsuleCastAll(p1, p2, capsuleCollider.radius - EPSILON, direction, distance, ~0, QueryTriggerInteraction.Ignore);
 
         hit = hits.Where(h => h.collider.transform != transform).OrderBy(h => h.distance).FirstOrDefault();
 

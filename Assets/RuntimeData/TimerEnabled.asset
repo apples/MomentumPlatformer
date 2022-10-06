@@ -12,4 +12,4 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8398610238751884596edca2fa0803f0, type: 3}
   m_Name: TimerEnabled
   m_EditorClassIdentifier: 
-  initialValue: 1
+  initialValue: 0

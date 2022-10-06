@@ -1943,11 +1943,11 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 2902785393843965211, guid: 860d06fe789a208448a4d2401e23b280, type: 3}
       propertyPath: m_Lens.m_SensorSize.x
-      value: 1.7777778
+      value: 1.9186603
       objectReference: {fileID: 0}
     - target: {fileID: 5687309209977535641, guid: 860d06fe789a208448a4d2401e23b280, type: 3}
       propertyPath: m_Lens.m_SensorSize.x
-      value: 1.7777778
+      value: 1.9186603
       objectReference: {fileID: 0}
     - target: {fileID: 6653758533952557369, guid: 860d06fe789a208448a4d2401e23b280, type: 3}
       propertyPath: m_Name
