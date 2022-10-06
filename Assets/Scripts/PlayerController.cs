@@ -481,6 +481,7 @@ public class PlayerController : MonoBehaviour
     private void UpdateRagdoll()
     {
         skidEffect.SetFloat("SpawnRate", 0);
+        board.SetActive(false);
     }
 
     private void FixedUpdate()

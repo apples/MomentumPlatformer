@@ -172,7 +172,7 @@ MonoBehaviour:
     ModeOverride: 0
     LensShift: {x: 0, y: 0}
     GateFit: 2
-    m_SensorSize: {x: 2.04, y: 1}
+    m_SensorSize: {x: 1.7963246, y: 1}
   m_Transitions:
     m_BlendHint: 0
     m_InheritPosition: 0
@@ -432,7 +432,7 @@ MonoBehaviour:
   m_StreamingVersion: 20170927
   m_Priority: 0
   m_StandbyUpdate: 2
-  m_LookAt: {fileID: 0}
+  m_LookAt: {fileID: 2002974460129731988}
   m_Follow: {fileID: 2730784486811953352}
   m_Lens:
     FieldOfView: 20
@@ -443,7 +443,7 @@ MonoBehaviour:
     ModeOverride: 0
     LensShift: {x: 0, y: 0}
     GateFit: 2
-    m_SensorSize: {x: 2.04, y: 1}
+    m_SensorSize: {x: 1.7963246, y: 1}
   m_Transitions:
     m_BlendHint: 0
     m_InheritPosition: 0
@@ -996,6 +996,11 @@ PrefabInstance:
       insertIndex: -1
       addedObject: {fileID: 1520251180177550166}
   m_SourcePrefab: {fileID: 100100000, guid: 6197f3b0b4c2c434a99e82c4d410f863, type: 3}
+--- !u!4 &2002974460129731988 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 6960118113828750960, guid: 6197f3b0b4c2c434a99e82c4d410f863, type: 3}
+  m_PrefabInstance: {fileID: 8889173435866948580}
+  m_PrefabAsset: {fileID: 0}
 --- !u!95 &2690668295812235697 stripped
 Animator:
   m_CorrespondingSourceObject: {fileID: 6776682325581980245, guid: 6197f3b0b4c2c434a99e82c4d410f863, type: 3}
