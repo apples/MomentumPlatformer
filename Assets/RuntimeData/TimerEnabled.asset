@@ -13,3 +13,4 @@ MonoBehaviour:
   m_Name: TimerEnabled
   m_EditorClassIdentifier: 
   initialValue: 0
+  dontUnloadWhenUnused: 1

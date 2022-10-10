@@ -8,6 +8,7 @@ namespace SOUP
     public class FloatValue : ScriptableObject
     {
         [SerializeField] private float initialValue;
+        [SerializeField] private bool dontUnloadWhenUnused;
 
         public delegate void EventDelegate(FloatValue value);
 
@@ -30,6 +31,10 @@ namespace SOUP
         private void OnEnable()
         {
             value = initialValue;
+            if (dontUnloadWhenUnused)
+            {
+                hideFlags = HideFlags.DontUnloadUnusedAsset;
+            }
         }
 
         public void RegisterListener(EventDelegate listener)

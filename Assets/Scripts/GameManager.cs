@@ -20,7 +20,7 @@ public class GameManager : MonoBehaviour
         scoreTimeValue.Value = 0;
     }
 
-    private void Update()
+    private void LateUpdate()
     {
         if (!stopTimer)
         {

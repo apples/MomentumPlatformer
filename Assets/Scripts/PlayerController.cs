@@ -13,7 +13,6 @@ using UnityEngine.VFX;
 public class PlayerController : MonoBehaviour
 {
     private const float EPSILON = 0.001f;
-    private const float MAX_ANGLE_SHOVE_DEG = 90f;
 
     [Header("Camera")]
     [SerializeField] private Transform cameraFollowTarget;
@@ -78,6 +77,11 @@ public class PlayerController : MonoBehaviour
     [SerializeField] private Vector3 startVelocity = Vector3.zero;
     [SerializeField] private Quaternion startRotation = Quaternion.identity;
 
+    [Header("Trick")]
+    [SerializeField] private float trickBoostImpulse = 30f;
+    [SerializeField] private float trickYawThreshold = 100f;
+    [SerializeField] private float trickPitchThreshold = 100f;
+
     private new Rigidbody rigidbody;
     private CapsuleCollider capsuleCollider;
 
@@ -100,9 +104,12 @@ public class PlayerController : MonoBehaviour
 
     private float lastTouchedGround = 0f;
 
-    private float backflipTimer = 0f;
-
     private float ragdollTimer = 0f;
+
+    private bool hasTrick = false;
+    private bool doingTrick = false;
+    private float trickYaw;
+    private float trickPitch;
 
     private class SavedState
     {
@@ -165,7 +172,6 @@ public class PlayerController : MonoBehaviour
         surfacePlane = savedState.surfacePlane;
         isSliding = savedState.isSliding;
         lastTouchedGround = savedState.lastTouchedGround;
-        backflipTimer = savedState.backflipTimer;
 
         if (Camera.main.GetComponent<CinemachineBrain>() is CinemachineBrain brain)
         {
@@ -190,7 +196,6 @@ public class PlayerController : MonoBehaviour
             surfacePlane = surfacePlane,
             isSliding = isSliding,
             lastTouchedGround = lastTouchedGround,
-            backflipTimer = backflipTimer,
         };
     }
 
@@ -282,9 +287,8 @@ public class PlayerController : MonoBehaviour
                 rotation = Quaternion.LookRotation(velocityDirection, surfacePlane);
             }
 
-            // lookEuler.x += -lookInput.y * lookSensitivity;
-            // lookEuler.y += lookInput.x * lookSensitivity;
-            backflipTimer = 0f;
+            hasTrick = false;
+            doingTrick = false;
         }
 
         // sliding input and acceleration
@@ -350,15 +354,16 @@ public class PlayerController : MonoBehaviour
                     skidSfxRemainingDebounceTime = skidSfxDebounceTime;
                 }
 
-                if (backflipTimer != 0) Debug.Log(backflipTimer);
-
-                if(backflipTimer > 1.0f)
+                // consume trick
+                if (hasTrick)
                 {
-                    velocity += velocity.normalized * 50;
+                    hasTrick = false;
+                    velocity += boardForward * trickBoostImpulse;
                     boostEffect.Play();
                     Debug.Log("Boost");
                 }
-                backflipTimer = 0f;
+
+                doingTrick = false;
             }
             else
             {
@@ -369,14 +374,22 @@ public class PlayerController : MonoBehaviour
                 skidEffect.SetFloat("SpawnRate", 0);
                 boardSfxTargetVolume = 0;
 
-                if(moveInput.y != 0)
+                // trick
+                if (!doingTrick)
                 {
-                    backflipTimer += Time.deltaTime;
+                    doingTrick = true;
+                    trickYaw = 0;
+                    trickPitch = 0;
+                }
+
+                trickYaw += steeringAngularAcceleration;
+                trickPitch += spinAngularAcceleration;
+
+                if (Mathf.Abs(trickYaw) > trickYawThreshold || Mathf.Abs(trickPitch) > trickPitchThreshold)
+                {
+                    hasTrick = true;
                 }
             }
-
-            // lookEuler.x += -lookInput.y * lookSensitivity;
-            // lookEuler.y = Mathf.Atan2(velocity.x, velocity.z) * Mathf.Rad2Deg;
         }
 
         skidEffect.transform.rotation = Quaternion.identity;
@@ -562,9 +575,8 @@ public class PlayerController : MonoBehaviour
         // update rigidbody
 
         Debug.DrawLine(transform.position, transform.position + velocity, Color.red);
-        rigidbody.MovePosition(ComputeMove(velocity * Time.fixedDeltaTime, out var lastDirection));
+        MoveAndSlide(Time.fixedDeltaTime, 45f);
         rigidbody.MoveRotation(rotation);
-        velocity = Vector3.Project(velocity, lastDirection);
         Debug.DrawLine(transform.position, transform.position + velocity, Color.blue);
     }
 
@@ -573,24 +585,32 @@ public class PlayerController : MonoBehaviour
         
     }
 
-    private Vector3 ComputeMove(Vector3 desiredMovement, out Vector3 lastDirection)
+    private void MoveAndSlide(float deltaTime, float minWallAngle)
     {
         var position = rigidbody.position;
         var rotation = rigidbody.rotation;
 
-        var remaining = desiredMovement;
+        var remainingMotion = velocity * deltaTime;
+        var remainingTime = deltaTime;
 
-        lastDirection = desiredMovement.normalized;
-
-        for (var bounces = 0; bounces < maxBounces && remaining.magnitude > EPSILON; ++bounces)
+        for (var bounces = 0; bounces < maxBounces && remainingMotion.magnitude > 0f; ++bounces)
         {
-            var remainingDist = remaining.magnitude;
+            var remainingDist = remainingMotion.magnitude;
+
+            var direction = remainingMotion.normalized;
 
             // Do a cast of the collider to see if an object is hit during this movement bounce
-            if (!CastCollider(position, rotation, remaining.normalized, remainingDist, out RaycastHit hit))
+            if (!CastCollider(position, rotation, direction, remainingDist, out var hit))
             {
                 // If there is no hit, move to desired position and exit
-                position += remaining;
+                position += remainingMotion;
+
+                // Apply gravity!
+                var gravityDist = 0.5f * gravity * Mathf.Pow(remainingTime, 2);
+                var didGravityHit = CastCollider(position, rotation, Vector3.down, gravityDist, out var gravityHit);
+                var gravityAccel = gravityHit.distance > EPSILON ? Vector3.down * (gravityHit.distance - EPSILON) + Vector3.up * EPSILON : gravityDist * Vector3.down;
+
+                position += gravityAccel;
                 break;
             }
 
@@ -604,10 +624,10 @@ public class PlayerController : MonoBehaviour
                     hit.collider,
                     hit.collider.transform.position,
                     hit.collider.transform.rotation,
-                    out var direction,
+                    out var resolveDirection,
                     out var distance))
                 {
-                    position += direction * distance;
+                    position += resolveDirection * distance;
                 }
                 else
                 {
@@ -616,7 +636,7 @@ public class PlayerController : MonoBehaviour
                     // if we're still overlapping something, just give up lol
                     if (hit2.distance < EPSILON)
                     {
-                        position += -remaining.normalized * overlapCorrectionDistance;
+                        position += -remainingMotion.normalized * overlapCorrectionDistance;
                         break;
                     }
 
@@ -626,50 +646,39 @@ public class PlayerController : MonoBehaviour
                 continue;
             }
 
-            float percentTravelled = (hit.distance - EPSILON) / remainingDist;
-
             var trueNormal = GetTrueNormal(hit);
 
-            // Set the fraction of remaining movement (minus some small value)
-            position += remaining * percentTravelled;
-            // Push slightly along normal to stop from getting caught in walls
-            position += trueNormal * EPSILON;
+
+            var deltaPosition = direction * hit.distance + trueNormal * EPSILON;
+
+            // Update position to where the hit occurred
+            position += deltaPosition;
+
+            float percentTravelled = deltaPosition.magnitude / remainingDist;
+
             // Decrease remaining movement by fraction of movement remaining
-            remaining *= 1f - percentTravelled;
+            remainingMotion *= 1f - percentTravelled;
+            remainingTime *= 1f - percentTravelled;
 
             // Only apply angular change if hitting something
-            // Get angle between surface normal and remaining movement
-            var surfaceAngle = Vector3.Angle(trueNormal, remaining) - 90.0f;
+            // Get angle between surface normal and direction
+            var surfaceAngle = Vector3.Angle(trueNormal, direction) - 90.0f;
+            var isWall = surfaceAngle > minWallAngle;
 
-            // Normalize angle between to be between 0 and 1
-            // 0 means no angle, 1 means 90 degree angle
-            surfaceAngle = Mathf.Min(MAX_ANGLE_SHOVE_DEG, Mathf.Abs(surfaceAngle));
-            var normalizedSurfaceAngle = surfaceAngle / MAX_ANGLE_SHOVE_DEG;
-
-            // Reduce the remaining movement by the remaining movement that ocurred
-            remaining *= Mathf.Pow(1 - normalizedSurfaceAngle, angleCollisionPower) * 0.9f + 0.1f;
-
-            // Rotate the remaining movement to be projected along the plane 
-            // of the surface hit (emulate pushing against the object)
-            var projectedRemaining = Vector3.ProjectOnPlane(remaining, trueNormal).normalized * remaining.magnitude;
-
-            // If projected remaining movement is less than original remaining movement (so if the projection broke
-            // due to float operations), then change this to just project along the vertical.
-            if (projectedRemaining.magnitude + EPSILON < remaining.magnitude)
+            if (isWall)
             {
-                remaining = Vector3.ProjectOnPlane(remaining, Vector3.up).normalized * remaining.magnitude;
+                remainingMotion = Vector3.ProjectOnPlane(remainingMotion, trueNormal);
+                velocity = Vector3.ProjectOnPlane(velocity, trueNormal);
             }
             else
             {
-                remaining = projectedRemaining;
+                remainingMotion = Vector3.ProjectOnPlane(remainingMotion, trueNormal).normalized * remainingMotion.magnitude;
+                velocity = Vector3.ProjectOnPlane(velocity, trueNormal).normalized * velocity.magnitude;
             }
-
-            // set the last direction to the direction we are moving in
-            lastDirection = remaining.normalized;
         }
 
         // We're done, player was moved as part of loop
-        return position;
+        rigidbody.MovePosition(position);
     }
 
     private Vector3 GetTrueNormal(RaycastHit hit)
