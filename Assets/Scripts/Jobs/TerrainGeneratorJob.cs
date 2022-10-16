@@ -16,6 +16,7 @@ public struct TerrainGeneratorJob : IJob
     // surface settings
     public float2 origin;
     public float2 scale;
+    public TerrainGeneratorAsset.NoiseType noiseType;
     public float noiseHeight;
     public float gradientStart;
     public float gradientEnd;
@@ -26,6 +27,7 @@ public struct TerrainGeneratorJob : IJob
     public float maxTreeHeight;
     public float minTreeWidth;
     public float maxTreeWidth;
+    public TerrainGeneratorAsset.NoiseType treeNoiseType;
     public float2 treeNoiseScale;
     public float treeNoiseMin;
     public float treeNoiseMax;
@@ -38,6 +40,16 @@ public struct TerrainGeneratorJob : IJob
 
     float2 NoiseCoord(float x, float y, float2 scale) => origin + new float2(chunkX + x, chunkZ + y) * scale;
 
+    float Noise(float2 noiseCoord, TerrainGeneratorAsset.NoiseType noiseType) =>
+        (noiseType switch
+        {
+            TerrainGeneratorAsset.NoiseType.Perlin => noise.cnoise(noiseCoord),
+            TerrainGeneratorAsset.NoiseType.Simplex => noise.snoise(noiseCoord),
+            TerrainGeneratorAsset.NoiseType.WorleyF1 => noise.cellular(noiseCoord).x,
+            TerrainGeneratorAsset.NoiseType.WorleyF2 => noise.cellular(noiseCoord).y,
+            _ => 0f,
+        });
+
     public void Execute()
     {
         var rng = new Unity.Mathematics.Random(randomSeed == 0 ? 1 : randomSeed);
@@ -49,12 +61,15 @@ public struct TerrainGeneratorJob : IJob
             {
                 var gradientValue = math.lerp(gradientStart, gradientEnd, (float)x / (chunkSize - 1));
                 var noiseCoord = NoiseCoord((float)x / (chunkSize - 1), (float)z / (chunkSize - 1), scale);
-                var noiseValue = noiseHeight * noise.snoise(noiseCoord);
+                var noiseValue = noiseHeight * Noise(noiseCoord, noiseType);
 
                 heights[x * chunkSize + z] = math.saturate(gradientValue + noiseValue);
 
-                // reduce the bit depth of the terrain to 15 bits, to hide rounding errors on the seams
-                heights[x * chunkSize + z] = math.round(heights[x * chunkSize + z] * 32767f) / 32767f;
+                // reduce the bit depth of the edge of the terrain to 15 bits, to hide rounding errors on the seams
+                if (x == 0 || x == chunkSize - 1 || z == 0 || z == chunkSize - 1)
+                {
+                    heights[x * chunkSize + z] = math.round(heights[x * chunkSize + z] * 32767f) / 32767f;
+                }
             }
         }
 
@@ -64,32 +79,22 @@ public struct TerrainGeneratorJob : IJob
             for (int z = 0; z < alphamapResolution; z++)
             {
                 var noiseCoord = NoiseCoord(((float)z + 0.5f) / alphamapResolution, ((float)x + 0.5f) / alphamapResolution, treeNoiseScale);
-                var noiseValue = noise.cellular(noiseCoord).x;
+                var noiseValue = Noise(noiseCoord, treeNoiseType);
 
-                grassAlpha[x * alphamapResolution + z] = math.saturate(math.lerp(treeNoiseMin, treeNoiseMax, math.smoothstep(0, 1, noiseValue)));
+                grassAlpha[x * alphamapResolution + z] = math.smoothstep(treeNoiseMin, treeNoiseMax, noiseValue);
             }
         }
 
         // trees
         var treePositions = Gists.FastPoissonDiskSampling.Sampling(new float2(0, 0), new float2(1, 1), ref rng, treeSpacing / terrainSize.x);
         var numTrees = 0;
-        var minmax = new float2(float.MaxValue, float.MinValue);
         for (var i = 0; i < treePositions.Count && i < trees.Length; ++i)
         {
             var treePosition = treePositions[i];
             var noiseCoord = NoiseCoord(treePosition.x, treePosition.y, treeNoiseScale);
-            var noiseValue = noise.cellular(noiseCoord).x;
+            var noiseValue = Noise(noiseCoord, treeNoiseType);
 
-            if (noiseValue < minmax.x)
-            {
-                minmax.x = noiseValue;
-            }
-            if (noiseValue > minmax.y)
-            {
-                minmax.y = noiseValue;
-            }
-
-            if (rng.NextFloat() < math.lerp(treeNoiseMin, treeNoiseMax, math.smoothstep(0, 1, noiseValue)))
+            if (rng.NextFloat() < math.smoothstep(treeNoiseMin, treeNoiseMax, noiseValue))
             {
                 continue;
             }

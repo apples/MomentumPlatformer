@@ -15,8 +15,10 @@ public class TerrainGeneratorAsset : ScriptableObject
     public int numChunks = 0;
     public int chunkResolution = 1025;
     public Vector3 terrainSize = new Vector3(1024, 1024, 1024);
+    public NoiseType noiseType = NoiseType.Simplex;
     public float noiseHeight = 0.01f;
     public Vector2 noiseScale = new Vector2(1, 1);
+    public NoiseType treeNoiseType = NoiseType.WorleyF1;
     public Vector2 treeNoiseScale = new Vector2(1, 1);
     public float treeNoiseMin = 0f;
     public float treeNoiseMax = 1f;
@@ -27,4 +29,12 @@ public class TerrainGeneratorAsset : ScriptableObject
     public List<GameObject> treePrefabs = new List<GameObject>(8);
     public TerrainLayer baseLayer;
     public List<TerrainLayer> terrainLayers = new List<TerrainLayer>(8);
+
+    public enum NoiseType
+    {
+        Perlin,
+        Simplex,
+        WorleyF1,
+        WorleyF2,
+    }
 }

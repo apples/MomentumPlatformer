@@ -14,16 +14,18 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   numChunks: 8
   chunkResolution: 1025
-  terrainSize: {x: 1024, y: 1024, z: 1024}
-  noiseHeight: 0.01
-  noiseScale: {x: 5, y: 5}
-  treeNoiseScale: {x: 4, y: 5}
-  treeNoiseMin: 0.1
-  treeNoiseMax: 1.5
+  terrainSize: {x: 1024, y: 220, z: 1024}
+  noiseType: 1
+  noiseHeight: 0.2
+  noiseScale: {x: 3, y: 5}
+  treeNoiseType: 1
+  treeNoiseScale: {x: 3, y: 5}
+  treeNoiseMin: 1
+  treeNoiseMax: 0.1
   terrainName: GreenHill
-  originRange: 80000
+  originRange: 800
   terrainTreeDrawDistance: 1000
-  seed: 2154370492
+  seed: 3769833680
   treePrefabs:
   - {fileID: 7618367939605302383, guid: b399fe93042ba174fafc392aefa26f83, type: 3}
   baseLayer: {fileID: 8574412962073106934, guid: f910952a4083662469f19829e7c57aea, type: 2}

@@ -63,6 +63,12 @@ public class TerrainGenerator : EditorWindow
             return;
         }
 
+        if (terrainObjects == null)
+        {
+            terrainObjects = ScriptableObject.CreateInstance<TerrainObjects>();
+            terrainObjectsEditor = Editor.CreateEditor(terrainObjects);
+        }
+
         terrainObjectsEditor.OnInspectorGUI();
 
         if (GUILayout.Button("Randomize Seed"))
@@ -120,14 +126,16 @@ public class TerrainGenerator : EditorWindow
                 randomSeed = rng.NextUInt(),
                 origin = origin,
                 scale = asset.noiseScale,
+                noiseType = asset.noiseType,
                 noiseHeight = asset.noiseHeight,
-                gradientStart = Mathf.Lerp(asset.noiseHeight, 1f - asset.noiseHeight, 0 / (float)asset.numChunks),
-                gradientEnd = Mathf.Lerp(asset.noiseHeight, 1f - asset.noiseHeight, (0 + 1) / (float)asset.numChunks),
+                gradientStart = asset.noiseHeight,
+                gradientEnd = 1f - asset.noiseHeight,
                 treeSpacing = 10,
                 minTreeHeight = 1,
                 maxTreeHeight = 2,
                 minTreeWidth = 1,
                 maxTreeWidth = 2,
+                treeNoiseType = asset.treeNoiseType,
                 treeNoiseScale = asset.treeNoiseScale,
                 treeNoiseMin = asset.treeNoiseMin,
                 treeNoiseMax = asset.treeNoiseMax,
@@ -163,14 +171,15 @@ public class TerrainGenerator : EditorWindow
                     obj = Terrain.CreateTerrainGameObject(terrainData);
                     terrainObjectsProp.GetArrayElementAtIndex(i).objectReferenceValue = obj;
                     obj.name = $"{asset.terrainName}_{i}";
-                    obj.transform.position = new Vector3(job.chunkX * asset.terrainSize.x, Mathf.Lerp(asset.noiseHeight, 1f - asset.noiseHeight, i / (float)asset.numChunks) * asset.terrainSize.y, job.chunkZ * asset.terrainSize.z);
+                    obj.transform.position = new Vector3(job.chunkX * asset.terrainSize.x, job.chunkX * (1f - 2f * asset.noiseHeight) * asset.terrainSize.y, job.chunkZ * asset.terrainSize.z);
                 }
                 else
                 {
                     var terrainData = obj.GetComponent<Terrain>().terrainData;
                     ApplyTerrainData(ref job, terrainData);
                     //obj.transform.position = new Vector3(job.chunkX * terrainSize.x, 0, job.chunkZ * terrainSize.z);
-                    obj.transform.position = new Vector3(job.chunkX * asset.terrainSize.x, Mathf.Lerp(asset.noiseHeight, 1f - asset.noiseHeight, i / (float)asset.numChunks) * asset.terrainSize.y, job.chunkZ * asset.terrainSize.z);
+                    // obj.transform.position = new Vector3(job.chunkX * asset.terrainSize.x, Mathf.Lerp(asset.noiseHeight, 1f - asset.noiseHeight, i / (float)asset.numChunks) * asset.terrainSize.y, job.chunkZ * asset.terrainSize.z);
+                    obj.transform.position = new Vector3(job.chunkX * asset.terrainSize.x, job.chunkX * (1f - 2f * asset.noiseHeight) * asset.terrainSize.y, job.chunkZ * asset.terrainSize.z);
                 }
 
                 obj.GetComponent<Terrain>().treeDistance = asset.terrainTreeDrawDistance;
