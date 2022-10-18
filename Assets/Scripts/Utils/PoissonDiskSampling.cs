@@ -1,7 +1,7 @@
 // Copied and modified from:
 // https://gist.github.com/a3geek/8532817159b77c727040cf67c92af322
 
-using System.Collections.Generic;
+using Unity.Collections;
 using Unity.Mathematics;
 
 namespace Gists
@@ -15,7 +15,7 @@ namespace Gists
         public const int DefaultIterationPerPoint = 30;
 
         #region "Structures"
-        private class Settings
+        private struct Settings
         {
             public float2 BottomLeft;
             public float2 TopRight;
@@ -30,11 +30,12 @@ namespace Gists
             public int GridHeight;
         }
 
-        private class Bags
+        private struct Bags
         {
-            public float2?[,] Grid;
-            public List<float2> SamplePoints;
-            public List<float2> ActivePoints;
+            public NativeArray2<float2> Grid;
+            public NativeArray2<bool> GridEnabled;
+            public NativeList<float2> SamplePoints;
+            public NativeList<float2> ActivePoints;
         }
 
         private struct rect
@@ -55,40 +56,41 @@ namespace Gists
         }
         #endregion
 
-        
-        public static List<float2> Sampling(float2 bottomLeft, float2 topRight, ref Random rng, float minimumDistance)
+        public static NativeList<float2> Sampling(float2 bottomLeft, float2 topRight, ref Random rng, float minimumDistance)
         {
             return Sampling(bottomLeft, topRight, ref rng, minimumDistance, DefaultIterationPerPoint);
         }
 
-        public static List<float2> Sampling(float2 bottomLeft, float2 topRight, ref Random rng, float minimumDistance, int iterationPerPoint)
+        public static NativeList<float2> Sampling(float2 bottomLeft, float2 topRight, ref Random rng, float minimumDistance, int iterationPerPoint)
         {
-            var settings = GetSettings(
+            GetSettings(
                 bottomLeft,
                 topRight,
                 minimumDistance,
-                iterationPerPoint <= 0 ? DefaultIterationPerPoint : iterationPerPoint
+                iterationPerPoint <= 0 ? DefaultIterationPerPoint : iterationPerPoint,
+                out var settings
             );
 
             var bags = new Bags()
             {
-                Grid = new float2?[settings.GridWidth + 1, settings.GridHeight + 1],
-                SamplePoints = new List<float2>(),
-                ActivePoints = new List<float2>()
+                Grid = new NativeArray2<float2>(settings.GridWidth + 1, settings.GridHeight + 1, Allocator.Temp),
+                GridEnabled = new NativeArray2<bool>(settings.GridWidth + 1, settings.GridHeight + 1, Allocator.Temp),
+                SamplePoints = new NativeList<float2>(settings.GridWidth * settings.GridHeight, Allocator.Temp),
+                ActivePoints = new NativeList<float2>(settings.GridWidth * settings.GridHeight, Allocator.Temp)
             };
 
-            GetFirstPoint(settings, bags, ref rng);
+            GetFirstPoint(ref settings, ref bags, ref rng);
             
             do
             {
-                var index = rng.NextInt(0, bags.ActivePoints.Count);
+                var index = rng.NextInt(0, bags.ActivePoints.Length);
 
                 var point = bags.ActivePoints[index];
 
                 var found = false;
                 for(var k = 0; k < settings.IterationPerPoint; k++)
                 {
-                    found = found | GetNextPoint(point, settings, bags, ref rng);
+                    found = found | GetNextPoint(point, ref settings, ref bags, ref rng);
                 }
 
                 if(found == false)
@@ -96,13 +98,13 @@ namespace Gists
                     bags.ActivePoints.RemoveAt(index);
                 }
             }
-            while(bags.ActivePoints.Count > 0);
+            while(bags.ActivePoints.Length > 0);
 
             return bags.SamplePoints;
         }
 
         #region "Algorithm Calculations"
-        private static bool GetNextPoint(float2 point, Settings set, Bags bags, ref Random rng)
+        private static bool GetNextPoint(float2 point, ref Settings set, ref Bags bags, ref Random rng)
         {
             var found = false;
             var p = GetRandPosInCircle(set.MinimumDistance, 2f * set.MinimumDistance, ref rng) + point;
@@ -113,7 +115,7 @@ namespace Gists
             }
 
             var minimum = set.MinimumDistance * set.MinimumDistance;
-            var index = GetGridIndex(p, set);
+            var index = GetGridIndex(p, ref set);
             var drop = false;
 
             // Although it is Mathf.CeilToInt(set.MinimumDistance / set.CellSize) in the formula, It will be 2 after all.
@@ -126,7 +128,8 @@ namespace Gists
                 for(var j = fieldMin.y; j <= fieldMax.y && drop == false; j++)
                 {
                     var q = bags.Grid[i, j];
-                    if(q.HasValue == true && math.lengthsq(q.Value - p) <= minimum)
+                    var qe = bags.GridEnabled[i, j];
+                    if(qe && math.lengthsq(q - p) <= minimum)
                     {
                         drop = true;
                     }
@@ -140,28 +143,30 @@ namespace Gists
                 bags.SamplePoints.Add(p);
                 bags.ActivePoints.Add(p);
                 bags.Grid[index.x, index.y] = p;
+                bags.GridEnabled[index.x, index.y] = true;
             }
 
             return found;
         }
 
-        private static void GetFirstPoint(Settings set, Bags bags, ref Random rng)
+        private static void GetFirstPoint(ref Settings set, ref Bags bags, ref Random rng)
         {
             var first = new float2(
                 rng.NextFloat(set.BottomLeft.x, set.TopRight.x),
                 rng.NextFloat(set.BottomLeft.y, set.TopRight.y)
             );
 
-            var index = GetGridIndex(first, set);
+            var index = GetGridIndex(first, ref set);
 
             bags.Grid[index.x, index.y] = first;
+            bags.GridEnabled[index.x, index.y] = true;
             bags.SamplePoints.Add(first);
             bags.ActivePoints.Add(first);
         }
         #endregion
 
         #region "Utils"
-        private static int2 GetGridIndex(float2 point, Settings set)
+        private static int2 GetGridIndex(float2 point, ref Settings set)
         {
             return new int2(
                 (int)math.floor((point.x - set.BottomLeft.x) / set.CellSize),
@@ -169,12 +174,12 @@ namespace Gists
             );
         }
 
-        private static Settings GetSettings(float2 bl, float2 tr, float min, int iteration)
+        private static void GetSettings(float2 bl, float2 tr, float min, int iteration, out Settings settings)
         {
             var dimension = (tr - bl);
             var cell = min * InvertRootTwo;
 
-            return new Settings()
+            settings = new Settings()
             {
                 BottomLeft = bl,
                 TopRight = tr,

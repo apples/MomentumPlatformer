@@ -10,22 +10,25 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: b53aaa2f58f9d064ca0ceff325328b09, type: 3}
-  m_Name: TerrainGenerator
+  m_Name: GreenHills
   m_EditorClassIdentifier: 
   numChunks: 8
   chunkResolution: 1025
-  terrainSize: {x: 1024, y: 220, z: 1024}
-  noiseType: 1
-  noiseHeight: 0.2
-  noiseScale: {x: 3, y: 5}
-  treeNoiseType: 1
+  terrainSize: {x: 1024, y: 160, z: 1024}
+  noiseType: 0
+  noiseHeight: 0.1
+  noiseScale: {x: 5, y: 10}
+  gutterGuardDistance: 0.1
+  treeNoiseType: 2
   treeNoiseScale: {x: 3, y: 5}
   treeNoiseMin: 1
   treeNoiseMax: 0.1
+  treeForcedChance: 0
+  sigilSpacing: 100
   terrainName: GreenHill
   originRange: 800
   terrainTreeDrawDistance: 1000
-  seed: 3769833680
+  seed: 4191452486
   treePrefabs:
   - {fileID: 7618367939605302383, guid: b399fe93042ba174fafc392aefa26f83, type: 3}
   baseLayer: {fileID: 8574412962073106934, guid: f910952a4083662469f19829e7c57aea, type: 2}

@@ -117,37 +117,12 @@ public class TerrainGenerator : EditorWindow
         var jobHandles = new List<JobHandle>(asset.numChunks);
         for (int i = 0; i < asset.numChunks; i++)
         {
-            var job = new TerrainGeneratorJob
-            {
-                chunkX = i,
-                chunkZ = 0,
-                chunkSize = asset.chunkResolution,
-                terrainSize = asset.terrainSize,
-                randomSeed = rng.NextUInt(),
-                origin = origin,
-                scale = asset.noiseScale,
-                noiseType = asset.noiseType,
-                noiseHeight = asset.noiseHeight,
-                gradientStart = asset.noiseHeight,
-                gradientEnd = 1f - asset.noiseHeight,
-                treeSpacing = 10,
-                minTreeHeight = 1,
-                maxTreeHeight = 2,
-                minTreeWidth = 1,
-                maxTreeWidth = 2,
-                treeNoiseType = asset.treeNoiseType,
-                treeNoiseScale = asset.treeNoiseScale,
-                treeNoiseMin = asset.treeNoiseMin,
-                treeNoiseMax = asset.treeNoiseMax,
-                heights = new NativeArray<float>(asset.chunkResolution * asset.chunkResolution, Allocator.TempJob),
-                trees = new NativeArray<TreeInstance>(asset.chunkResolution * asset.chunkResolution, Allocator.TempJob),
-                numTrees = new NativeArray<int>(1, Allocator.TempJob),
-                alphamapResolution = asset.chunkResolution - 1,
-                grassAlpha = new NativeArray<float>((asset.chunkResolution - 1) * (asset.chunkResolution - 1), Allocator.TempJob),
-            };
+            TerrainGeneratorJob job;
+
+            var handle = asset.StartJob(i, 0, out job);
 
             jobs.Add(job);
-            jobHandles.Add(job.Schedule());
+            jobHandles.Add(handle);
         }
 
         try
@@ -167,7 +142,7 @@ public class TerrainGenerator : EditorWindow
                 {
                     var terrainData = new TerrainData();
                     AssetDatabase.CreateAsset(terrainData, $"Assets/Terrain/{asset.terrainName}_{i}_TerrainData.asset");
-                    ApplyTerrainData(ref job, terrainData);
+                    asset.ApplyTerrainData(ref job, terrainData);
                     obj = Terrain.CreateTerrainGameObject(terrainData);
                     terrainObjectsProp.GetArrayElementAtIndex(i).objectReferenceValue = obj;
                     obj.name = $"{asset.terrainName}_{i}";
@@ -176,9 +151,7 @@ public class TerrainGenerator : EditorWindow
                 else
                 {
                     var terrainData = obj.GetComponent<Terrain>().terrainData;
-                    ApplyTerrainData(ref job, terrainData);
-                    //obj.transform.position = new Vector3(job.chunkX * terrainSize.x, 0, job.chunkZ * terrainSize.z);
-                    // obj.transform.position = new Vector3(job.chunkX * asset.terrainSize.x, Mathf.Lerp(asset.noiseHeight, 1f - asset.noiseHeight, i / (float)asset.numChunks) * asset.terrainSize.y, job.chunkZ * asset.terrainSize.z);
+                    asset.ApplyTerrainData(ref job, terrainData);
                     obj.transform.position = new Vector3(job.chunkX * asset.terrainSize.x, job.chunkX * (1f - 2f * asset.noiseHeight) * asset.terrainSize.y, job.chunkZ * asset.terrainSize.z);
                 }
 
@@ -192,72 +165,11 @@ public class TerrainGenerator : EditorWindow
         {
             foreach (var job in jobs)
             {
-                job.heights.Dispose();
-                job.trees.Dispose();
-                job.numTrees.Dispose();
-                job.grassAlpha.Dispose();
+                job.Dispose();
             }
 
             terrainObjectsEditor.serializedObject.ApplyModifiedProperties();
         }
 
-    }
-
-    private void ApplyTerrainData(ref TerrainGeneratorJob job, TerrainData terrainData)
-    {
-        var heights = new float[asset.chunkResolution, asset.chunkResolution];
-        for (int x = 0; x < asset.chunkResolution; x++)
-        {
-            for (int z = 0; z < asset.chunkResolution; z++)
-            {
-                heights[z, x] = job.heights[x * asset.chunkResolution + z];
-            }
-        }
-
-        // heightmap
-
-        terrainData.heightmapResolution = asset.chunkResolution;
-        terrainData.size = asset.terrainSize;
-        terrainData.SetHeights(0, 0, heights);
-
-        // textures
-
-        terrainData.alphamapResolution = asset.chunkResolution - 1;
-        terrainData.terrainLayers = asset.terrainLayers.Prepend(asset.baseLayer).ToArray();
-
-        var alphamaps = new float[terrainData.alphamapResolution, terrainData.alphamapResolution, terrainData.alphamapLayers];
-
-        for (int x = 0; x < terrainData.alphamapResolution; x++)
-        {
-            for (int z = 0; z < terrainData.alphamapResolution; z++)
-            {
-                alphamaps[x, z, 0] = 1f;
-                alphamaps[x, z, 1] = job.grassAlpha[x * terrainData.alphamapResolution + z];
-            }
-        }
-
-        terrainData.SetAlphamaps(0, 0, alphamaps);
-
-        // trees
-
-        var treePrototypes = new TreePrototype[asset.treePrefabs.Count];
-        for (int i = 0; i < asset.treePrefabs.Count; i++)
-        {
-            treePrototypes[i] = new TreePrototype
-            {
-                prefab = asset.treePrefabs[i],
-            };
-        }
-        terrainData.treePrototypes = treePrototypes;
-        terrainData.RefreshPrototypes();
-
-        var trees = new TreeInstance[job.numTrees[0]];
-        for (int i = 0; i < job.numTrees[0]; i++)
-        {
-            trees[i] = job.trees[i];
-        }
-        terrainData.SetTreeInstances(trees, true);
-
-        Debug.Log($"Set trees: {job.numTrees}");
     }
 }

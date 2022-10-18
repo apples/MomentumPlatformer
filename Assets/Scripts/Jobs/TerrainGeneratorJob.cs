@@ -1,10 +1,12 @@
 
+using Unity.Burst;
 using Unity.Collections;
 using Unity.Jobs;
 using Unity.Mathematics;
 using UnityEngine;
 
-public struct TerrainGeneratorJob : IJob
+[BurstCompile]
+public struct TerrainGeneratorJob : IJob, System.IDisposable
 {
     public int chunkX;
     public int chunkZ;
@@ -20,6 +22,7 @@ public struct TerrainGeneratorJob : IJob
     public float noiseHeight;
     public float gradientStart;
     public float gradientEnd;
+    public float gutterGuardDistance;
 
     // tree settings
     public float treeSpacing;
@@ -31,12 +34,28 @@ public struct TerrainGeneratorJob : IJob
     public float2 treeNoiseScale;
     public float treeNoiseMin;
     public float treeNoiseMax;
+    public float treeForcedChance;
+
+    // sigil settings
+    public float sigilSpacing;
 
     // results
     public NativeArray<float> heights;
     public NativeArray<TreeInstance> trees;
     public NativeArray<int> numTrees;
+    public NativeArray<float2> sigils;
+    public NativeArray<int> numSigils;
     public NativeArray<float> grassAlpha;
+
+    public void Dispose()
+    {
+        heights.Dispose();
+        trees.Dispose();
+        numTrees.Dispose();
+        sigils.Dispose();
+        numSigils.Dispose();
+        grassAlpha.Dispose();
+    }
 
     float2 NoiseCoord(float x, float y, float2 scale) => origin + new float2(chunkX + x, chunkZ + y) * scale;
 
@@ -63,6 +82,14 @@ public struct TerrainGeneratorJob : IJob
                 var noiseCoord = NoiseCoord((float)x / (chunkSize - 1), (float)z / (chunkSize - 1), scale);
                 var noiseValue = noiseHeight * Noise(noiseCoord, noiseType);
 
+                if (gutterGuardDistance > 0)
+                {
+                    var dist = math.max(
+                        math.smoothstep(gutterGuardDistance, 0f, z / (float)(chunkSize - 1)),
+                        math.smoothstep(1f - gutterGuardDistance, 1f, z / (float)(chunkSize - 1)));
+                    noiseValue = math.lerp(noiseValue, noiseHeight, dist);
+                }
+
                 heights[x * chunkSize + z] = math.saturate(gradientValue + noiseValue);
 
                 // reduce the bit depth of the edge of the terrain to 15 bits, to hide rounding errors on the seams
@@ -78,23 +105,26 @@ public struct TerrainGeneratorJob : IJob
         {
             for (int z = 0; z < alphamapResolution; z++)
             {
-                var noiseCoord = NoiseCoord(((float)z + 0.5f) / alphamapResolution, ((float)x + 0.5f) / alphamapResolution, treeNoiseScale);
+                var noiseCoord = NoiseCoord(((float)x + 0.5f) / alphamapResolution, ((float)z + 0.5f) / alphamapResolution, treeNoiseScale);
                 var noiseValue = Noise(noiseCoord, treeNoiseType);
 
-                grassAlpha[x * alphamapResolution + z] = math.smoothstep(treeNoiseMin, treeNoiseMax, noiseValue);
+                grassAlpha[z * alphamapResolution + x] = math.smoothstep(treeNoiseMin, treeNoiseMax, noiseValue);
             }
         }
 
         // trees
         var treePositions = Gists.FastPoissonDiskSampling.Sampling(new float2(0, 0), new float2(1, 1), ref rng, treeSpacing / terrainSize.x);
         var numTrees = 0;
-        for (var i = 0; i < treePositions.Count && i < trees.Length; ++i)
+        for (var i = 0; i < treePositions.Length && i < trees.Length; ++i)
         {
             var treePosition = treePositions[i];
             var noiseCoord = NoiseCoord(treePosition.x, treePosition.y, treeNoiseScale);
-            var noiseValue = Noise(noiseCoord, treeNoiseType);
+            // var noiseValue = Noise(noiseCoord, treeNoiseType);
+            var noiseX = math.clamp((int)(treePosition.x * alphamapResolution), 0, alphamapResolution - 1);
+            var noiseZ = math.clamp((int)(treePosition.y * alphamapResolution), 0, alphamapResolution - 1);
+            var noiseValue = grassAlpha[noiseZ * alphamapResolution + noiseX];
 
-            if (rng.NextFloat() < math.smoothstep(treeNoiseMin, treeNoiseMax, noiseValue))
+            if (rng.NextFloat() < noiseValue && (treeForcedChance == 0f || rng.NextFloat() >= treeForcedChance))
             {
                 continue;
             }
@@ -117,5 +147,25 @@ public struct TerrainGeneratorJob : IJob
             trees[numTrees++] = tree;
         }
         this.numTrees[0] = numTrees;
+
+        // sigils
+        var sigilPositions = Gists.FastPoissonDiskSampling.Sampling(new float2(0, 0), new float2(1, 1), ref rng, sigilSpacing / terrainSize.x);
+        var numSigils = 0;
+        for (var i = 0; i < sigilPositions.Length && i < sigils.Length; ++i)
+        {
+            var sigilPosition = sigilPositions[i];
+            var noiseCoord = NoiseCoord(sigilPosition.x, sigilPosition.y, treeNoiseScale);
+            var noiseX = math.clamp((int)(sigilPosition.x * alphamapResolution), 0, alphamapResolution - 1);
+            var noiseZ = math.clamp((int)(sigilPosition.y * alphamapResolution), 0, alphamapResolution - 1);
+            var noiseValue = grassAlpha[noiseZ * alphamapResolution + noiseX];
+
+            if (rng.NextFloat() >= noiseValue)
+            {
+                continue;
+            }
+
+            sigils[numSigils++] = sigilPosition;
+        }
+        this.numSigils[0] = numSigils;
     }
 }
