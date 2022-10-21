@@ -3,6 +3,7 @@
 
 using Unity.Collections;
 using Unity.Mathematics;
+using Unity.Profiling;
 
 namespace Gists
 {
@@ -63,6 +64,9 @@ namespace Gists
 
         public static NativeList<float2> Sampling(float2 bottomLeft, float2 topRight, ref Random rng, float minimumDistance, int iterationPerPoint)
         {
+            var marker = new ProfilerMarker("PoissonDiskSampling.Sampling");
+            marker.Begin();
+
             GetSettings(
                 bottomLeft,
                 topRight,
@@ -100,6 +104,7 @@ namespace Gists
             }
             while(bags.ActivePoints.Length > 0);
 
+            marker.End();
             return bags.SamplePoints;
         }
 

@@ -3,6 +3,7 @@ using Unity.Burst;
 using Unity.Collections;
 using Unity.Jobs;
 using Unity.Mathematics;
+using Unity.Profiling;
 using UnityEngine;
 
 [BurstCompile]
@@ -10,16 +11,17 @@ public struct TerrainGeneratorJob : IJob, System.IDisposable
 {
     public int chunkX;
     public int chunkZ;
-    public int chunkSize;
-    public float3 terrainSize;
+    public int chunkResolution;
+    public float2 terrainSize;
     public int alphamapResolution;
-    public uint randomSeed;
+    public uint chunkSeed;
 
     // surface settings
     public float2 origin;
     public float2 scale;
+    public float slopeGrade;
     public TerrainGeneratorAsset.NoiseType noiseType;
-    public float noiseHeight;
+    public float normalizedNoiseHeight;
     public float gradientStart;
     public float gradientEnd;
     public float gutterGuardDistance;
@@ -42,10 +44,10 @@ public struct TerrainGeneratorJob : IJob, System.IDisposable
     // results
     public NativeArray<float> heights;
     public NativeArray<TreeInstance> trees;
-    public NativeArray<int> numTrees;
+    public NativeReference<int> numTrees;
     public NativeArray<float2> sigils;
-    public NativeArray<int> numSigils;
-    public NativeArray<float> grassAlpha;
+    public NativeReference<int> numSigils;
+    public NativeArray<float> alphaMaps;
 
     public void Dispose()
     {
@@ -54,13 +56,13 @@ public struct TerrainGeneratorJob : IJob, System.IDisposable
         numTrees.Dispose();
         sigils.Dispose();
         numSigils.Dispose();
-        grassAlpha.Dispose();
+        alphaMaps.Dispose();
     }
 
-    float2 NoiseCoord(float x, float y, float2 scale) => origin + new float2(chunkX + x, chunkZ + y) * scale;
+    float2 NoiseCoord(float x, float y, float2 scale) => origin + new float2(chunkX + x, chunkZ + y) * terrainSize / scale;
 
-    float Noise(float2 noiseCoord, TerrainGeneratorAsset.NoiseType noiseType) =>
-        (noiseType switch
+    private ProfilerMarker noiseMarker;
+    float Noise(float2 noiseCoord, TerrainGeneratorAsset.NoiseType noiseType) => (noiseType switch
         {
             TerrainGeneratorAsset.NoiseType.Perlin => noise.cnoise(noiseCoord),
             TerrainGeneratorAsset.NoiseType.Simplex => noise.snoise(noiseCoord),
@@ -68,39 +70,95 @@ public struct TerrainGeneratorJob : IJob, System.IDisposable
             TerrainGeneratorAsset.NoiseType.WorleyF2 => noise.cellular(noiseCoord).y,
             _ => 0f,
         });
+    private static float NoisePerlin(float2 noiseCoord) => noise.cnoise(noiseCoord);
+    private static float NoiseSimplex(float2 noiseCoord) => noise.snoise(noiseCoord);
+    private static float NoiseWorleyF1(float2 noiseCoord) => noise.cellular(noiseCoord).x;
+    private static float NoiseWorleyF2(float2 noiseCoord) => noise.cellular(noiseCoord).y;
+    private static float NoiseZero(float2 noiseCoord) => 0f;
+
+    private int HeightIndex(int x, int z) => z * chunkResolution + x;
+    private int AlphaIndex(int x, int z, int layer) => (z * alphamapResolution + x) * 2 + layer;
 
     public void Execute()
     {
-        var rng = new Unity.Mathematics.Random(randomSeed == 0 ? 1 : randomSeed);
+        var rng = new Unity.Mathematics.Random(chunkSeed == 0 ? 1 : chunkSeed);
+
+        var marker = new ProfilerMarker("TerrainGeneratorJob.Execute");
+        marker.Begin();
+        noiseMarker = new ProfilerMarker("TerrainGeneratorJob.Execute.Noise");
 
         // base terrain
-        for (int x = 0; x < chunkSize; x++)
-        {
-            for (int z = 0; z < chunkSize; z++)
-            {
-                var gradientValue = math.lerp(gradientStart, gradientEnd, (float)x / (chunkSize - 1));
-                var noiseCoord = NoiseCoord((float)x / (chunkSize - 1), (float)z / (chunkSize - 1), scale);
-                var noiseValue = noiseHeight * Noise(noiseCoord, noiseType);
+        var markerTerrain = new ProfilerMarker("TerrainGeneratorJob.Execute.Terrain");
+        markerTerrain.Begin();
 
-                if (gutterGuardDistance > 0)
+        // calculate noise
+        var markerTerrainNoise = new ProfilerMarker("TerrainGeneratorJob.Execute.Terrain.Noise");
+        markerTerrainNoise.Begin();
+        for (int x = 0; x < chunkResolution; x++)
+        {
+            for (int z = 0; z < chunkResolution; z++)
+            {
+                var noiseCoord = NoiseCoord((float)x / (chunkResolution - 1), (float)z / (chunkResolution - 1), scale);
+                var noiseValue = normalizedNoiseHeight * Noise(noiseCoord, noiseType);
+                heights[HeightIndex(x, z)] = noiseValue;
+            }
+        }
+        markerTerrainNoise.End();
+
+        // apply gutter guard
+        var markerTerrainGutterGuard = new ProfilerMarker("TerrainGeneratorJob.Execute.Terrain.GutterGuard");
+        markerTerrainGutterGuard.Begin();
+        if (gutterGuardDistance > 0)
+        {
+            for (int x = 0; x < chunkResolution; x++)
+            {
+                for (int z = 0; z < chunkResolution; z++)
                 {
                     var dist = math.max(
-                        math.smoothstep(gutterGuardDistance, 0f, z / (float)(chunkSize - 1)),
-                        math.smoothstep(1f - gutterGuardDistance, 1f, z / (float)(chunkSize - 1)));
-                    noiseValue = math.lerp(noiseValue, noiseHeight, dist);
-                }
-
-                heights[x * chunkSize + z] = math.saturate(gradientValue + noiseValue);
-
-                // reduce the bit depth of the edge of the terrain to 15 bits, to hide rounding errors on the seams
-                if (x == 0 || x == chunkSize - 1 || z == 0 || z == chunkSize - 1)
-                {
-                    heights[x * chunkSize + z] = math.round(heights[x * chunkSize + z] * 32767f) / 32767f;
+                        math.smoothstep(gutterGuardDistance, 0f, z / (float)(chunkResolution - 1)),
+                        math.smoothstep(1f - gutterGuardDistance, 1f, z / (float)(chunkResolution - 1)));
+                    var noiseValue = heights[HeightIndex(x, z)];
+                    noiseValue = math.lerp(noiseValue, normalizedNoiseHeight, dist);
+                    heights[HeightIndex(x, z)] = noiseValue;
                 }
             }
         }
+        markerTerrainGutterGuard.End();
+
+        // apply gradient
+        var markerTerrainGradient = new ProfilerMarker("TerrainGeneratorJob.Execute.Terrain.Gradient");
+        markerTerrainGradient.Begin();
+        for (int x = 0; x < chunkResolution; x++)
+        {
+            for (int z = 0; z < chunkResolution; z++)
+            {
+                var gradientValue = math.lerp(gradientStart, gradientEnd, (float)x / (chunkResolution - 1));
+                var noiseValue = heights[HeightIndex(x, z)];
+                heights[HeightIndex(x, z)] = math.saturate(gradientValue + noiseValue);
+            }
+        }
+        markerTerrainGradient.End();
+
+        // reduce the bit depth of the edge of the terrain to 15 bits, to hide rounding errors on the seams
+        var markerTerrainEdge = new ProfilerMarker("TerrainGeneratorJob.Execute.Terrain.Edge");
+        markerTerrainEdge.Begin();
+        for (int x = 0; x < chunkResolution; x++)
+        {
+            heights[HeightIndex(x, 0)] = math.round(heights[HeightIndex(x, 0)] * 32767f) / 32767f;
+            heights[HeightIndex(x, chunkResolution - 1)] = math.round(heights[HeightIndex(x, chunkResolution - 1)] * 32767f) / 32767f;
+        }
+        for (int z = 0; z < chunkResolution; z++)
+        {
+            heights[HeightIndex(0, z)] = math.round(heights[HeightIndex(0, z)] * 32767f) / 32767f;
+            heights[HeightIndex(chunkResolution - 1, z)] = math.round(heights[HeightIndex(chunkResolution - 1, z)] * 32767f) / 32767f;
+        }
+        markerTerrainEdge.End();
+
+        markerTerrain.End();
 
         // grass texture
+        var markerGrass = new ProfilerMarker("TerrainGeneratorJob.Execute.Grass");
+        markerGrass.Begin();
         for (int x = 0; x < alphamapResolution; x++)
         {
             for (int z = 0; z < alphamapResolution; z++)
@@ -108,11 +166,15 @@ public struct TerrainGeneratorJob : IJob, System.IDisposable
                 var noiseCoord = NoiseCoord(((float)x + 0.5f) / alphamapResolution, ((float)z + 0.5f) / alphamapResolution, treeNoiseScale);
                 var noiseValue = Noise(noiseCoord, treeNoiseType);
 
-                grassAlpha[z * alphamapResolution + x] = math.smoothstep(treeNoiseMin, treeNoiseMax, noiseValue);
+                alphaMaps[AlphaIndex(x, z, 0)] = 1f;
+                alphaMaps[AlphaIndex(x, z, 1)] = math.smoothstep(treeNoiseMin, treeNoiseMax, noiseValue);
             }
         }
+        markerGrass.End();
 
         // trees
+        var markerTrees = new ProfilerMarker("TerrainGeneratorJob.Execute.Trees");
+        markerTrees.Begin();
         var treePositions = Gists.FastPoissonDiskSampling.Sampling(new float2(0, 0), new float2(1, 1), ref rng, treeSpacing / terrainSize.x);
         var numTrees = 0;
         for (var i = 0; i < treePositions.Length && i < trees.Length; ++i)
@@ -122,7 +184,7 @@ public struct TerrainGeneratorJob : IJob, System.IDisposable
             // var noiseValue = Noise(noiseCoord, treeNoiseType);
             var noiseX = math.clamp((int)(treePosition.x * alphamapResolution), 0, alphamapResolution - 1);
             var noiseZ = math.clamp((int)(treePosition.y * alphamapResolution), 0, alphamapResolution - 1);
-            var noiseValue = grassAlpha[noiseZ * alphamapResolution + noiseX];
+            var noiseValue = alphaMaps[AlphaIndex(noiseX, noiseZ, 1)];
 
             if (rng.NextFloat() < noiseValue && (treeForcedChance == 0f || rng.NextFloat() >= treeForcedChance))
             {
@@ -146,9 +208,12 @@ public struct TerrainGeneratorJob : IJob, System.IDisposable
 
             trees[numTrees++] = tree;
         }
-        this.numTrees[0] = numTrees;
+        this.numTrees.Value = numTrees;
+        markerTrees.End();
 
         // sigils
+        var markerSigils = new ProfilerMarker("TerrainGeneratorJob.Execute.Sigils");
+        markerSigils.Begin();
         var sigilPositions = Gists.FastPoissonDiskSampling.Sampling(new float2(0, 0), new float2(1, 1), ref rng, sigilSpacing / terrainSize.x);
         var numSigils = 0;
         for (var i = 0; i < sigilPositions.Length && i < sigils.Length; ++i)
@@ -157,7 +222,7 @@ public struct TerrainGeneratorJob : IJob, System.IDisposable
             var noiseCoord = NoiseCoord(sigilPosition.x, sigilPosition.y, treeNoiseScale);
             var noiseX = math.clamp((int)(sigilPosition.x * alphamapResolution), 0, alphamapResolution - 1);
             var noiseZ = math.clamp((int)(sigilPosition.y * alphamapResolution), 0, alphamapResolution - 1);
-            var noiseValue = grassAlpha[noiseZ * alphamapResolution + noiseX];
+            var noiseValue = alphaMaps[AlphaIndex(noiseX, noiseZ, 1)];
 
             if (rng.NextFloat() >= noiseValue)
             {
@@ -166,6 +231,9 @@ public struct TerrainGeneratorJob : IJob, System.IDisposable
 
             sigils[numSigils++] = sigilPosition;
         }
-        this.numSigils[0] = numSigils;
+        this.numSigils.Value = numSigils;
+        markerSigils.End();
+
+        marker.End();
     }
 }

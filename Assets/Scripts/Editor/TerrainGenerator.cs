@@ -138,6 +138,8 @@ public class TerrainGenerator : EditorWindow
 
                 var obj = (GameObject)terrainObjectsProp.GetArrayElementAtIndex(i).objectReferenceValue;
 
+                var terrainPos = asset.GetChunkPosition(i, 0);
+
                 if (obj == null)
                 {
                     var terrainData = new TerrainData();
@@ -146,14 +148,14 @@ public class TerrainGenerator : EditorWindow
                     obj = Terrain.CreateTerrainGameObject(terrainData);
                     terrainObjectsProp.GetArrayElementAtIndex(i).objectReferenceValue = obj;
                     obj.name = $"{asset.terrainName}_{i}";
-                    obj.transform.position = new Vector3(job.chunkX * asset.terrainSize.x, job.chunkX * (1f - 2f * asset.noiseHeight) * asset.terrainSize.y, job.chunkZ * asset.terrainSize.z);
                 }
                 else
                 {
                     var terrainData = obj.GetComponent<Terrain>().terrainData;
                     asset.ApplyTerrainData(ref job, terrainData);
-                    obj.transform.position = new Vector3(job.chunkX * asset.terrainSize.x, job.chunkX * (1f - 2f * asset.noiseHeight) * asset.terrainSize.y, job.chunkZ * asset.terrainSize.z);
                 }
+
+                obj.transform.position = terrainPos;
 
                 obj.GetComponent<Terrain>().treeDistance = asset.terrainTreeDrawDistance;
                 obj.GetComponent<Terrain>().Flush();

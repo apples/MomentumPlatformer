@@ -10,18 +10,18 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: b53aaa2f58f9d064ca0ceff325328b09, type: 3}
-  m_Name: GreenHills
+  m_Name: GreenHills_Inf
   m_EditorClassIdentifier: 
   numChunks: 8
-  chunkResolution: 513
-  chunkSize: {x: 1024, y: 1024}
+  chunkResolution: 129
+  chunkSize: {x: 256, y: 256}
   slopeGrade: 12
-  noiseType: 0
+  noiseType: 1
   noiseHeight: 20
-  noiseScale: {x: 200, y: 60}
-  gutterGuardDistance: 0.1
+  noiseScale: {x: 500, y: 150}
+  gutterGuardDistance: 0
   treeNoiseType: 2
-  treeNoiseScale: {x: 500, y: 300}
+  treeNoiseScale: {x: 1000, y: 600}
   treeNoiseMin: 0.1
   treeNoiseMax: 0.5
   treeForcedChance: 0
@@ -29,7 +29,7 @@ MonoBehaviour:
   terrainName: GreenHill
   originRange: 800
   terrainTreeDrawDistance: 1000
-  seed: 3440669116
+  seed: 4191452486
   treePrefabs:
   - {fileID: 7618367939605302383, guid: b399fe93042ba174fafc392aefa26f83, type: 3}
   baseLayer: {fileID: 8574412962073106934, guid: f910952a4083662469f19829e7c57aea, type: 2}
