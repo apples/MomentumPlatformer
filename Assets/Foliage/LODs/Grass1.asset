@@ -16,4 +16,4 @@ MonoBehaviour:
   - {fileID: 8254687373856176130, guid: 383862c0b471f194b8b1e7faead84798, type: 3}
   materials:
   - {fileID: 2100000, guid: 84950ce6c297d644b83cc6dcb81d2038, type: 2}
-  maxDistance: 250
+  maxDistance: 500

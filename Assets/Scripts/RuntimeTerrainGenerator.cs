@@ -20,7 +20,6 @@ public class RuntimeTerrainGenerator : MonoBehaviour
     private List<Vector2Int> pendingRemovals = new List<Vector2Int>(32);
 
     private ObjectPool<GameObject> terrainPool;
-    // private ObjectPool<GameObject> treePool;
     private ObjectPool<GameObject> sigilPool;
 
     private FoliagePool foliagePool;
@@ -62,7 +61,6 @@ public class RuntimeTerrainGenerator : MonoBehaviour
         var chunkViewWidth = Mathf.CeilToInt(viewRadius * 2f / terrainSize.x + 1f);
         var maxPooledTerrains = chunkViewWidth * chunkViewWidth;
         int MaxPoissonCount(float d) => (int)Mathf.Ceil((terrainSize.x + d) * (terrainSize.y + d) * Mathf.Sqrt(3f) / (6f * d * d * 0.25f));
-        var maxTreeCount = MaxPoissonCount(asset.treeSpacing);
         var maxSigilCount = MaxPoissonCount(asset.sigilSpacing);
 
         terrainPool = new ObjectPool<GameObject>(
@@ -72,13 +70,6 @@ public class RuntimeTerrainGenerator : MonoBehaviour
             actionOnDestroy: GameObject.Destroy,
             defaultCapacity: 32,
             maxSize: maxPooledTerrains);
-        // treePool = new ObjectPool<GameObject>(
-        //     createFunc: this.CreateTree,
-        //     actionOnGet: this.ActivateTree,
-        //     actionOnRelease: this.DeactivateTree,
-        //     actionOnDestroy: GameObject.Destroy,
-        //     defaultCapacity: 32,
-        //     maxSize: maxPooledTerrains * maxTreeCount);
         sigilPool = new ObjectPool<GameObject>(
             createFunc: this.CreateSigil,
             actionOnGet: this.ActivateSigil,
@@ -97,7 +88,6 @@ public class RuntimeTerrainGenerator : MonoBehaviour
         }
 
         terrainPool.Dispose();
-        // treePool.Dispose();
         sigilPool.Dispose();
     }
 
@@ -258,21 +248,6 @@ public class RuntimeTerrainGenerator : MonoBehaviour
         obj.SetActive(false);
     }
 
-    // private GameObject CreateTree()
-    // {
-    //     return Instantiate(asset.treePrefab);
-    // }
-
-    // private void ActivateTree(GameObject obj)
-    // {
-    //     obj.SetActive(true);
-    // }
-
-    // private void DeactivateTree(GameObject obj)
-    // {
-    //     obj.SetActive(false);
-    // }
-
     private GameObject CreateTerrain()
     {
         var obj = Instantiate(terrainChunkPrefab);
@@ -301,14 +276,6 @@ public class RuntimeTerrainGenerator : MonoBehaviour
     private void DeactivateTerrain(GameObject obj)
     {
         obj.SetActive(false);
-
-        // var trees = obj.transform.Find("Trees");
-        // while (trees.childCount > 0)
-        // {
-        //     var child = trees.GetChild(0);
-        //     child.SetParent(this.transform, false);
-        //     treePool.Release(child.gameObject);
-        // }
 
         var sigils = obj.transform.Find("Sigils");
         while (sigils.childCount > 0)

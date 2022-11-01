@@ -22,11 +22,8 @@ MonoBehaviour:
   gutterGuardDistance: 0
   treeNoiseType: 2
   treeNoiseScale: {x: 1000, y: 600}
-  treeSpacing: 10
   treeNoiseMin: 0.1
   treeNoiseMax: 0.5
-  treeForcedChance: 0.01
-  grassSpacing: 5
   sigilSpacing: 500
   terrainName: GreenHill
   originRange: 800
@@ -38,3 +35,4 @@ MonoBehaviour:
   sigilPrefab: {fileID: 8173067174147102333, guid: a124cfd154f7b91418adc46fe0ddcde8, type: 3}
   foliage:
   - {fileID: 11400000, guid: 770ed855487b0f94284b7843d92423e4, type: 2}
+  - {fileID: 11400000, guid: d1f955ef1c1fef94e91b65f0d88423eb, type: 2}

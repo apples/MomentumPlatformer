@@ -13,14 +13,14 @@ MonoBehaviour:
   m_Name: Grass
   m_EditorClassIdentifier: 
   foliageParams:
-    spacing: 5
+    spacing: 2
     minHeight: 1
-    maxHeight: 2
+    maxHeight: 5
     minWidth: 1
     maxWidth: 1
     alphaLayer: 1
     inverted: 1
-    forcedChance: 0.001
+    forcedChance: 0
     meshRotationEuler: {x: -90, y: 0, z: 0}
   lods:
   - {fileID: 11400000, guid: be70e1c7b1d68d846a0e144236ccf9a1, type: 2}

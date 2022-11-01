@@ -20,7 +20,7 @@ MonoBehaviour:
     maxWidth: 2
     alphaLayer: 1
     inverted: 0
-    forcedChance: 0.9
+    forcedChance: 0.01
     meshRotationEuler: {x: -90, y: 0, z: 0}
   lods:
   - {fileID: 11400000, guid: 4e0055f6b5decf84fa2b4a020fc61238, type: 2}

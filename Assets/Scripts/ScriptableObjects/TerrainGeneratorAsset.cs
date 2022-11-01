@@ -25,18 +25,13 @@ public class TerrainGeneratorAsset : ScriptableObject
     public float gutterGuardDistance = 0f;
     public NoiseType treeNoiseType = NoiseType.WorleyF1;
     public Vector2 treeNoiseScale = new Vector2(1, 1);
-    public float treeSpacing = 10f;
     public float treeNoiseMin = 0f;
     public float treeNoiseMax = 1f;
-    public float treeForcedChance = 0f;
-    public float grassSpacing = 5f;
     public float sigilSpacing = 500f;
     public string terrainName = "Terrain";
     public float originRange = 80000;
     public float terrainTreeDrawDistance = 1000;
     public uint seed = 0;
-    // public FoliageLayerLOD[] treeLODs;
-    // public GameObject treePrefab;
     public TerrainLayer baseLayer;
     public List<TerrainLayer> terrainLayers = new List<TerrainLayer>();
     public GameObject sigilPrefab;
@@ -136,17 +131,10 @@ public class TerrainGeneratorAsset : ScriptableObject
             gradientStart = normalizedNoiseHeight,
             gradientEnd = 1f - normalizedNoiseHeight,
             gutterGuardDistance = gutterGuardDistance,
-            // treeSpacing = treeSpacing,
-            // minTreeHeight = 1,
-            // maxTreeHeight = 2,
-            // minTreeWidth = 1,
-            // maxTreeWidth = 2,
             treeNoiseType = treeNoiseType,
             treeNoiseScale = treeNoiseScale,
             treeNoiseMin = treeNoiseMin,
             treeNoiseMax = treeNoiseMax,
-            // treeForcedChance = treeForcedChance,
-            // treeMeshRotation = quaternion.Euler(-90f * Mathf.Deg2Rad, 0, 0),
             sigilSpacing = sigilSpacing,
             alphamapResolution = chunkResolution - 1,
             foliageParams = foliageParams,
@@ -176,14 +164,6 @@ public class TerrainGeneratorAsset : ScriptableObject
                 job.heights.GetUnsafeReadOnlyPtr(),
                 chunkResolution * chunkResolution * sizeof(float));
         }
-
-        // for (int x = 0; x < chunkResolution; x++)
-        // {
-        //     for (int z = 0; z < chunkResolution; z++)
-        //     {
-        //         heights[z, x] = job.heights[x * chunkResolution + z];
-        //     }
-        // }
 
         markerCopyHeights.End();
 
@@ -219,15 +199,6 @@ public class TerrainGeneratorAsset : ScriptableObject
                 terrainData.alphamapResolution * terrainData.alphamapResolution * terrainData.alphamapLayers * sizeof(float));
         }
 
-        // for (int x = 0; x < terrainData.alphamapResolution; x++)
-        // {
-        //     for (int z = 0; z < terrainData.alphamapResolution; z++)
-        //     {
-        //         alphamaps[z, x, 0] = 1f;
-        //         alphamaps[z, x, 1] = job.alphaMaps[z * terrainData.alphamapResolution + x];
-        //     }
-        // }
-
         markerCopyAlpha.End();
 
         var markerAlphamap = new ProfilerMarker("TerrainGeneratorAsset.ApplyTerrainData.SetAlphamaps");
@@ -237,40 +208,6 @@ public class TerrainGeneratorAsset : ScriptableObject
 
         markerAlphamap.End();
         markerSetTextures.End();
-
-        // trees
-
-        var markerSetTrees = new ProfilerMarker("TerrainGeneratorAsset.ApplyTerrainData.SetTrees");
-        markerSetTrees.Begin();
-
-        // var treePrototypes = new TreePrototype[treePrefabs.Count];
-        // for (int i = 0; i < treePrefabs.Count; i++)
-        // {
-        //     treePrototypes[i] = new TreePrototype
-        //     {
-        //         prefab = treePrefabs[i],
-        //     };
-        // }
-        // terrainData.treePrototypes = treePrototypes;
-        // terrainData.RefreshPrototypes();
-
-        // var trees = new TreeInstance[job.trees.Length];
-        // for (int i = 0; i < job.trees.Length; i++)
-        // {
-        //     var tree = job.trees[i];
-        //     trees[i] = new TreeInstance{
-        //         position = new Vector3(tree.position.x, 0, tree.position.y),
-        //         widthScale = tree.widthScale,
-        //         heightScale = tree.heightScale,
-        //         rotation = tree.rotation * Mathf.Deg2Rad,
-        //         color = Color.white,
-        //         lightmapColor = Color.white,
-        //         prototypeIndex = 0,
-        //     };
-        // }
-        // terrainData.SetTreeInstances(trees, true);
-
-        markerSetTrees.End();
 
         marker.End();
     }
@@ -287,62 +224,7 @@ public class TerrainGeneratorAsset : ScriptableObject
         gameObject.GetComponent<Terrain>().treeDistance = terrainTreeDrawDistance;
         gameObject.GetComponent<Terrain>().Flush();
 
-        // spawn trees
-
-        // var trees = gameObject.transform.Find("Trees");
-
-        // for (var i = 0; i < job.trees.Length; i++)
-        // {
-        //     var tree = job.trees[i];
-
-        //     var y = terrainData.GetInterpolatedHeight(tree.position.x, tree.position.y);
-        //     var normal = terrainData.GetInterpolatedNormal(tree.position.x, tree.position.y);
-
-        //     var treeObject = treePool.Get();
-
-        //     treeObject.transform.SetParent(trees);
-        //     treeObject.transform.localPosition = new Vector3(tree.position.x * terrainData.size.x, y, tree.position.y * terrainData.size.z);
-        // }
-
-
-        // var trees = gameObject.transform.Find("Trees");
-        // var treeInstanceRenderer = trees.GetComponent<FoliageRenderer>();
-
-        // treeInstanceRenderer.lods = treeLODs;
-
-        // var treeBounds = treeInstanceRenderer.AllMeshBounds;
-        // var allTreeBounds = new Bounds();
-
-        // for (var i = 0; i < job.trees.Length; i++)
-        // {
-        //     var tree = job.trees[i];
-
-        //     // bounds
-
-        //     if (i == 0)
-        //     {
-        //         allTreeBounds = new Bounds(tree.position, Vector3.zero);
-        //     }
-
-        //     var currentTreeBound = treeBounds;
-        //     currentTreeBound.center = tree.position;
-
-        //     allTreeBounds.Encapsulate(currentTreeBound);
-
-        //     // prefab
-
-        //     var treeObject = treePool.Get();
-
-        //     treeObject.transform.SetParent(trees);
-        //     treeObject.transform.position = tree.position;
-        //     treeObject.transform.localScale = tree.scale;
-        // }
-
-        // treeInstanceRenderer.SetMeshInstances(job.treeInstanceData.ToArray(), allTreeBounds);
-
-
         // foliage
-
 
         for (var i = 0; i < foliage.Count; ++i)
         {
@@ -379,8 +261,6 @@ public class TerrainGeneratorAsset : ScriptableObject
 
             foliageInstanceRenderer.SetMeshInstances(instances.ToArray(), foliageBounds);
         }
-
-
 
         // spawn sigils
 
