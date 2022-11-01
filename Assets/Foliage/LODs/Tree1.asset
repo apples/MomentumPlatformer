@@ -1,0 +1,21 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 675018a03fc467943b01237abdb3e12b, type: 3}
+  m_Name: Tree1
+  m_EditorClassIdentifier: 
+  meshes:
+  - {fileID: 2494185979427425891, guid: f8771d6aa28fa0c48be9c00616580d13, type: 3}
+  - {fileID: 7063772746714116716, guid: f8771d6aa28fa0c48be9c00616580d13, type: 3}
+  materials:
+  - {fileID: 2100000, guid: c1e16ef7553951941b48ca9581cc05e8, type: 2}
+  - {fileID: 2100000, guid: 0b570961e117cad458a0071856dc1540, type: 2}
+  maxDistance: 500

@@ -5,6 +5,7 @@ using Unity.Jobs;
 using Unity.Mathematics;
 using Unity.Profiling;
 using UnityEngine;
+using Random = Unity.Mathematics.Random;
 
 [BurstCompile]
 public struct TerrainGeneratorJob : IJob, System.IDisposable
@@ -13,13 +14,14 @@ public struct TerrainGeneratorJob : IJob, System.IDisposable
     public int chunkZ;
     public int chunkResolution;
     public float2 terrainSize;
+    public float terrainHeight;
     public int alphamapResolution;
     public uint chunkSeed;
+    public float3 worldPosition;
 
     // surface settings
     public float2 origin;
     public float2 scale;
-    public float slopeGrade;
     public TerrainGeneratorAsset.NoiseType noiseType;
     public float normalizedNoiseHeight;
     public float gradientStart;
@@ -36,27 +38,76 @@ public struct TerrainGeneratorJob : IJob, System.IDisposable
     public float2 treeNoiseScale;
     public float treeNoiseMin;
     public float treeNoiseMax;
-    public float treeForcedChance;
+    // public float treeForcedChance;
+    // public quaternion treeMeshRotation;
+
+    // foliage
+    public NativeArray<FoliageLayer.FoliageParams> foliageParams;
+    public NativeArray<Bounds> foliageBounds;
 
     // sigil settings
     public float sigilSpacing;
 
     // results
     public NativeArray<float> heights;
-    public NativeArray<TreeInstance> trees;
-    public NativeReference<int> numTrees;
-    public NativeArray<float2> sigils;
-    public NativeReference<int> numSigils;
+    // public NativeList<FoliageRenderer.MeshInstanceData> treeInstanceData;
+    // public NativeList<FoliageInfo> trees;
+    public NativeList<float3> sigils;
     public NativeArray<float> alphaMaps;
+
+    public NativeList<FoliageRenderer.MeshInstanceData> foliageInstanceData;
+    public NativeList<FoliageInfo> foliageInfo;
+    public NativeArray<FoliageResult> foliageResults;
+
+    public struct FoliageInfo
+    {
+        public float3 position;
+        public quaternion rotation;
+        public float3 scale;
+    }
+
+    public struct FoliageResult
+    {
+        public int index;
+        public int count;
+        public Bounds bounds;
+    }
+
+    public void Allocate(Allocator allocator)
+    {
+        var terrainSize = this.terrainSize;
+        int MaxPoissonCount(float d) => (int)math.ceil((terrainSize.x + d) * (terrainSize.y + d) * math.sqrt(3f) / (6f * d * d * 0.25f));
+        // var maxTreeCount = MaxPoissonCount(treeSpacing);
+        var maxSigilCount = MaxPoissonCount(sigilSpacing);
+        heights = new NativeArray<float>(chunkResolution * chunkResolution, allocator);
+        // treeInstanceData = new NativeList<FoliageRenderer.MeshInstanceData>(maxTreeCount, allocator);
+        // trees = new NativeList<FoliageInfo>(maxTreeCount, allocator);
+        sigils = new NativeList<float3>(maxSigilCount, allocator);
+        alphaMaps = new NativeArray<float>((chunkResolution - 1) * (chunkResolution - 1) * 2, allocator);
+
+        var maxFoliageCount = 0;
+        for (int i = 0; i < foliageParams.Length; i++)
+        {
+            maxFoliageCount += MaxPoissonCount(foliageParams[i].spacing);
+        }
+        foliageInstanceData = new NativeList<FoliageRenderer.MeshInstanceData>(maxFoliageCount, allocator);
+        foliageInfo = new NativeList<FoliageInfo>(maxFoliageCount, allocator);
+        foliageResults = new NativeArray<FoliageResult>(maxFoliageCount, allocator);
+    }
 
     public void Dispose()
     {
         heights.Dispose();
-        trees.Dispose();
-        numTrees.Dispose();
+        // treeInstanceData.Dispose();
+        // trees.Dispose();
         sigils.Dispose();
-        numSigils.Dispose();
         alphaMaps.Dispose();
+
+        foliageParams.Dispose();
+        foliageBounds.Dispose();
+        foliageInstanceData.Dispose();
+        foliageInfo.Dispose();
+        foliageResults.Dispose();
     }
 
     float2 NoiseCoord(float x, float y, float2 scale) => origin + new float2(chunkX + x, chunkZ + y) * terrainSize / scale;
@@ -81,19 +132,11 @@ public struct TerrainGeneratorJob : IJob, System.IDisposable
 
     public void Execute()
     {
-        var rng = new Unity.Mathematics.Random(chunkSeed == 0 ? 1 : chunkSeed);
-
-        var marker = new ProfilerMarker("TerrainGeneratorJob.Execute");
-        marker.Begin();
-        noiseMarker = new ProfilerMarker("TerrainGeneratorJob.Execute.Noise");
+        var rng = new Random(chunkSeed == 0 ? 1 : chunkSeed);
 
         // base terrain
-        var markerTerrain = new ProfilerMarker("TerrainGeneratorJob.Execute.Terrain");
-        markerTerrain.Begin();
 
         // calculate noise
-        var markerTerrainNoise = new ProfilerMarker("TerrainGeneratorJob.Execute.Terrain.Noise");
-        markerTerrainNoise.Begin();
         for (int x = 0; x < chunkResolution; x++)
         {
             for (int z = 0; z < chunkResolution; z++)
@@ -103,11 +146,8 @@ public struct TerrainGeneratorJob : IJob, System.IDisposable
                 heights[HeightIndex(x, z)] = noiseValue;
             }
         }
-        markerTerrainNoise.End();
 
         // apply gutter guard
-        var markerTerrainGutterGuard = new ProfilerMarker("TerrainGeneratorJob.Execute.Terrain.GutterGuard");
-        markerTerrainGutterGuard.Begin();
         if (gutterGuardDistance > 0)
         {
             for (int x = 0; x < chunkResolution; x++)
@@ -123,11 +163,8 @@ public struct TerrainGeneratorJob : IJob, System.IDisposable
                 }
             }
         }
-        markerTerrainGutterGuard.End();
 
         // apply gradient
-        var markerTerrainGradient = new ProfilerMarker("TerrainGeneratorJob.Execute.Terrain.Gradient");
-        markerTerrainGradient.Begin();
         for (int x = 0; x < chunkResolution; x++)
         {
             for (int z = 0; z < chunkResolution; z++)
@@ -137,11 +174,8 @@ public struct TerrainGeneratorJob : IJob, System.IDisposable
                 heights[HeightIndex(x, z)] = math.saturate(gradientValue + noiseValue);
             }
         }
-        markerTerrainGradient.End();
 
         // reduce the bit depth of the edge of the terrain to 15 bits, to hide rounding errors on the seams
-        var markerTerrainEdge = new ProfilerMarker("TerrainGeneratorJob.Execute.Terrain.Edge");
-        markerTerrainEdge.Begin();
         for (int x = 0; x < chunkResolution; x++)
         {
             heights[HeightIndex(x, 0)] = math.round(heights[HeightIndex(x, 0)] * 32767f) / 32767f;
@@ -152,13 +186,8 @@ public struct TerrainGeneratorJob : IJob, System.IDisposable
             heights[HeightIndex(0, z)] = math.round(heights[HeightIndex(0, z)] * 32767f) / 32767f;
             heights[HeightIndex(chunkResolution - 1, z)] = math.round(heights[HeightIndex(chunkResolution - 1, z)] * 32767f) / 32767f;
         }
-        markerTerrainEdge.End();
-
-        markerTerrain.End();
 
         // grass texture
-        var markerGrass = new ProfilerMarker("TerrainGeneratorJob.Execute.Grass");
-        markerGrass.Begin();
         for (int x = 0; x < alphamapResolution; x++)
         {
             for (int z = 0; z < alphamapResolution; z++)
@@ -170,70 +199,256 @@ public struct TerrainGeneratorJob : IJob, System.IDisposable
                 alphaMaps[AlphaIndex(x, z, 1)] = math.smoothstep(treeNoiseMin, treeNoiseMax, noiseValue);
             }
         }
-        markerGrass.End();
 
         // trees
-        var markerTrees = new ProfilerMarker("TerrainGeneratorJob.Execute.Trees");
-        markerTrees.Begin();
-        var treePositions = Gists.FastPoissonDiskSampling.Sampling(new float2(0, 0), new float2(1, 1), ref rng, treeSpacing / terrainSize.x);
-        var numTrees = 0;
-        for (var i = 0; i < treePositions.Length && i < trees.Length; ++i)
-        {
-            var treePosition = treePositions[i];
-            var noiseCoord = NoiseCoord(treePosition.x, treePosition.y, treeNoiseScale);
-            // var noiseValue = Noise(noiseCoord, treeNoiseType);
-            var noiseX = math.clamp((int)(treePosition.x * alphamapResolution), 0, alphamapResolution - 1);
-            var noiseZ = math.clamp((int)(treePosition.y * alphamapResolution), 0, alphamapResolution - 1);
-            var noiseValue = alphaMaps[AlphaIndex(noiseX, noiseZ, 1)];
+        // var markerTrees = new ProfilerMarker("TerrainGeneratorJob.Execute.Trees");
+        // markerTrees.Begin();
 
-            if (rng.NextFloat() < noiseValue && (treeForcedChance == 0f || rng.NextFloat() >= treeForcedChance))
-            {
-                continue;
-            }
+        // var treePositions = new NativeList<float3>(Allocator.Temp);
+        // PoissonSampler(ref treePositions, ref rng, treeSpacing, alphaLayer: 1, inverted: false);
 
-            var treeHeight = math.lerp(minTreeHeight, maxTreeHeight, rng.NextFloat());
-            var treeWidth = math.lerp(minTreeWidth, maxTreeWidth, rng.NextFloat());
-            var treeRotation = math.lerp(0f, 2 * Mathf.PI, rng.NextFloat());
+        // for (var i = 0; i < treePositions.Length; i++)
+        // {
+        //     var treePosition = treePositions[i];
+            
+        //     var treeRotation = math.lerp(0f, 2f * math.PI, rng.NextFloat());
+        //     var rotation = math.mul(quaternion.Euler(0, treeRotation, 0), treeMeshRotation);
 
-            var tree = new TreeInstance
-            {
-                color = Color.white,
-                heightScale = treeHeight,
-                widthScale = treeWidth,
-                lightmapColor = Color.white,
-                position = new Vector3(treePosition.x, 0, treePosition.y),
-                rotation = treeRotation,
-                prototypeIndex = 0,
-            };
+        //     var treeHeight = math.lerp(minTreeHeight, maxTreeHeight, rng.NextFloat());
+        //     var treeWidth = math.lerp(minTreeWidth, maxTreeWidth, rng.NextFloat());
+        //     var scale = new float3(treeWidth, treeHeight, treeWidth);
 
-            trees[numTrees++] = tree;
-        }
-        this.numTrees.Value = numTrees;
-        markerTrees.End();
+        //     var matrix = float4x4.TRS(treePosition, rotation, scale);
+
+        //     var treeMeshInstance = new FoliageRenderer.MeshInstanceData
+        //     {
+        //         objectToWorld = matrix,
+        //         worldToObject = math.inverse(matrix),
+        //     };
+
+        //     treeInstanceData.Add(treeMeshInstance);
+        //     trees.Add(new FoliageInfo
+        //     {
+        //         position = treePosition,
+        //         scale = scale,
+        //     });
+        // }
+
+        // var treePositions = Gists.FastPoissonDiskSampling.Sampling(new float2(0, 0), new float2(1, 1), ref rng, treeSpacing / terrainSize.x);
+        // for (var i = 0; i < treePositions.Length; ++i)
+        // {
+        //     var treePosition = treePositions[i];
+        //     var noiseCoord = NoiseCoord(treePosition.x, treePosition.y, treeNoiseScale);
+        //     // var noiseValue = Noise(noiseCoord, treeNoiseType);
+        //     var noiseX = math.clamp((int)(treePosition.x * alphamapResolution), 0, alphamapResolution - 1);
+        //     var noiseZ = math.clamp((int)(treePosition.y * alphamapResolution), 0, alphamapResolution - 1);
+        //     var noiseValue = alphaMaps[AlphaIndex(noiseX, noiseZ, 1)];
+
+        //     if (rng.NextFloat() < noiseValue && (treeForcedChance == 0f || rng.NextFloat() >= treeForcedChance))
+        //     {
+        //         continue;
+        //     }
+
+        //     var treeHeight = math.lerp(minTreeHeight, maxTreeHeight, rng.NextFloat());
+        //     var treeWidth = math.lerp(minTreeWidth, maxTreeWidth, rng.NextFloat());
+        //     var treeRotation = math.lerp(0f, 2f * math.PI, rng.NextFloat());
+
+        //     var treeWorldXZ = treePosition * terrainSize + new float2(worldPosition.x, worldPosition.z);
+
+        //     var hxb = math.clamp(treePosition.x * (chunkResolution - 1), 0, chunkResolution - 1);
+        //     var hxf = math.clamp(math.frac(hxb), 0, 1);
+        //     var hyb = math.clamp(treePosition.y * (chunkResolution - 1), 0, chunkResolution - 1);
+        //     var hyf = math.clamp(math.frac(hyb), 0, 1);
+
+        //     if (hxb == chunkResolution - 1)
+        //     {
+        //         hxb -= 1;
+        //         hxf = 1;
+        //     }
+
+        //     if (hyb == chunkResolution - 1)
+        //     {
+        //         hyb -= 1;
+        //         hyf = 1;
+        //     }
+
+        //     var h00 = heights[HeightIndex((int)hxb, (int)hyb)];
+        //     var h01 = heights[HeightIndex((int)hxb, (int)hyb + 1)];
+        //     var h10 = heights[HeightIndex((int)hxb + 1, (int)hyb)];
+        //     var h11 = heights[HeightIndex((int)hxb + 1, (int)hyb + 1)];
+
+        //     var h = math.lerp(
+        //         math.lerp(h00, h01, hyf),
+        //         math.lerp(h10, h11, hyf),
+        //         hxf);
+
+        //     var y = h * terrainHeight + worldPosition.y;
+
+        //     var rotation = math.mul(quaternion.Euler(0, treeRotation, 0), treeMeshRotation);
+
+        //     var treeWorldPosition = new float3(treeWorldXZ.x, y, treeWorldXZ.y);
+
+        //     var scale = new float3(treeWidth, treeHeight, treeWidth);
+
+        //     var matrix = float4x4.TRS(treeWorldPosition, rotation, scale);
+
+        //     var treeMeshInstance = new MeshInstanceRenderer.MeshInstanceData
+        //     {
+        //         objectToWorld = matrix,
+        //         worldToObject = math.inverse(matrix),
+        //     };
+
+        //     treeInstanceData.Add(treeMeshInstance);
+        //     trees.Add(new Tree
+        //     {
+        //         position = treeWorldPosition,
+        //         scale = scale,
+        //     });
+        // }
+        // markerTrees.End();
 
         // sigils
+        
         var markerSigils = new ProfilerMarker("TerrainGeneratorJob.Execute.Sigils");
         markerSigils.Begin();
-        var sigilPositions = Gists.FastPoissonDiskSampling.Sampling(new float2(0, 0), new float2(1, 1), ref rng, sigilSpacing / terrainSize.x);
-        var numSigils = 0;
-        for (var i = 0; i < sigilPositions.Length && i < sigils.Length; ++i)
-        {
-            var sigilPosition = sigilPositions[i];
-            var noiseCoord = NoiseCoord(sigilPosition.x, sigilPosition.y, treeNoiseScale);
-            var noiseX = math.clamp((int)(sigilPosition.x * alphamapResolution), 0, alphamapResolution - 1);
-            var noiseZ = math.clamp((int)(sigilPosition.y * alphamapResolution), 0, alphamapResolution - 1);
-            var noiseValue = alphaMaps[AlphaIndex(noiseX, noiseZ, 1)];
 
-            if (rng.NextFloat() >= noiseValue)
+        PoissonSampler(ref sigils, ref rng, sigilSpacing, alphaLayer: 1, inverted: true, forcedChance: 0f);
+
+        markerSigils.End();
+
+        // var sigilPositions = Gists.FastPoissonDiskSampling.Sampling(new float2(0, 0), new float2(1, 1), ref rng, sigilSpacing / terrainSize.x);
+        // for (var i = 0; i < sigilPositions.Length; ++i)
+        // {
+        //     var sigilPosition = sigilPositions[i];
+        //     var noiseCoord = NoiseCoord(sigilPosition.x, sigilPosition.y, treeNoiseScale);
+        //     var noiseX = math.clamp((int)(sigilPosition.x * alphamapResolution), 0, alphamapResolution - 1);
+        //     var noiseZ = math.clamp((int)(sigilPosition.y * alphamapResolution), 0, alphamapResolution - 1);
+        //     var noiseValue = alphaMaps[AlphaIndex(noiseX, noiseZ, 1)];
+
+        //     if (rng.NextFloat() >= noiseValue)
+        //     {
+        //         continue;
+        //     }
+
+        //     sigils.Add(sigilPosition);
+        // }
+
+        // foliage
+        
+        var markerFoliage = new ProfilerMarker("TerrainGeneratorJob.Execute.Foliage");
+        markerFoliage.Begin();
+
+        for (var i = 0; i < foliageParams.Length; ++i)
+        {
+            var p = foliageParams[i];
+
+            var foliageSample = new NativeList<float3>(Allocator.Temp);
+            PoissonSampler(ref foliageSample, ref rng, p.spacing, alphaLayer: p.alphaLayer, inverted: p.inverted, forcedChance: p.forcedChance);
+
+            var result = new FoliageResult();
+            result.index = foliageInfo.Length;
+            result.count = foliageSample.Length;
+
+            for (var j = 0; j < foliageSample.Length; ++j)
+            {
+                var position = foliageSample[j];
+
+                var spinY = math.lerp(0f, 2f * math.PI, rng.NextFloat());
+                var rotation = quaternion.Euler(0, spinY, 0);
+                var meshRotation = math.mul(rotation, quaternion.Euler(p.meshRotationEuler * Mathf.Deg2Rad));
+
+                var height = math.lerp(p.minHeight, p.maxHeight, rng.NextFloat());
+                var width = math.lerp(p.minWidth, p.maxWidth, rng.NextFloat());
+                var scale = new float3(width, height, width);
+
+                var matrix = float4x4.TRS(position, meshRotation, scale);
+
+                var meshInstance = new FoliageRenderer.MeshInstanceData
+                {
+                    objectToWorld = matrix,
+                    worldToObject = math.inverse(matrix),
+                };
+
+                foliageInstanceData.Add(meshInstance);
+                foliageInfo.Add(new FoliageInfo
+                {
+                    position = position,
+                    rotation = rotation,
+                    scale = scale,
+                });
+
+                if (j == 0)
+                {
+                    result.bounds = new Bounds(position, Vector3.zero);
+                }
+
+                var bounds = foliageBounds[i];
+                bounds.center = position;
+                result.bounds.Encapsulate(bounds);
+            }
+
+            foliageResults[i] = result;
+        }
+
+
+        markerFoliage.End();
+    }
+
+    void PoissonSampler(ref NativeList<float3> results, ref Random rng, float spacing, int alphaLayer, bool inverted, float forcedChance)
+    {
+        var samples = Gists.FastPoissonDiskSampling.Sampling(new float2(0, 0), terrainSize, ref rng, spacing);
+
+        results.Clear();
+
+        if (results.Capacity < samples.Length)
+        {
+            results.Capacity = samples.Length;
+        }
+
+        for (var i = 0; i < samples.Length; ++i)
+        {
+            var sample = samples[i] / terrainSize;
+            var noiseX = math.clamp((int)(sample.x * alphamapResolution), 0, alphamapResolution - 1);
+            var noiseZ = math.clamp((int)(sample.y * alphamapResolution), 0, alphamapResolution - 1);
+            var noiseValue = alphaMaps[AlphaIndex(noiseX, noiseZ, alphaLayer)];
+
+            if (!inverted == (rng.NextFloat() < noiseValue) && (forcedChance == 0f || rng.NextFloat() >= forcedChance))
             {
                 continue;
             }
 
-            sigils[numSigils++] = sigilPosition;
-        }
-        this.numSigils.Value = numSigils;
-        markerSigils.End();
+            var hxb = math.clamp(sample.x * (chunkResolution - 1), 0, chunkResolution - 1);
+            var hyb = math.clamp(sample.y * (chunkResolution - 1), 0, chunkResolution - 1);
+            var hxf = math.clamp(math.frac(hxb), 0, 1);
+            var hyf = math.clamp(math.frac(hyb), 0, 1);
 
-        marker.End();
+            if (hxb == chunkResolution - 1)
+            {
+                hxb -= 1;
+                hxf = 1;
+            }
+
+            if (hyb == chunkResolution - 1)
+            {
+                hyb -= 1;
+                hyf = 1;
+            }
+
+            var h00 = heights[HeightIndex((int)hxb, (int)hyb)];
+            var h01 = heights[HeightIndex((int)hxb, (int)hyb + 1)];
+            var h10 = heights[HeightIndex((int)hxb + 1, (int)hyb)];
+            var h11 = heights[HeightIndex((int)hxb + 1, (int)hyb + 1)];
+
+            var h = math.lerp(
+                math.lerp(h00, h01, hyf),
+                math.lerp(h10, h11, hyf),
+                hxf);
+
+            var y = h * terrainHeight;
+
+            var position = new float3(sample.x * terrainSize.x, y, sample.y * terrainSize.y) + worldPosition;
+
+            results.Add(position);
+        }
     }
 }
