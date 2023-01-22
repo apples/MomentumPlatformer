@@ -13,9 +13,9 @@ MonoBehaviour:
   m_Name: Grass
   m_EditorClassIdentifier: 
   foliageParams:
-    spacing: 2
-    minHeight: 1
-    maxHeight: 5
+    spacing: 1
+    minHeight: 0.5
+    maxHeight: 1.5
     minWidth: 1
     maxWidth: 1
     alphaLayer: 1

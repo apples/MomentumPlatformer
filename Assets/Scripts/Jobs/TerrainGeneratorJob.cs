@@ -228,16 +228,14 @@ public struct TerrainGeneratorJob : IJob, System.IDisposable
                 var spinY = math.lerp(0f, 2f * math.PI, rng.NextFloat());
                 var rotation = quaternion.Euler(0, spinY, 0);
                 var meshRotation = quaternion.Euler(p.meshRotationEuler * Mathf.Deg2Rad);
-                var combinedRotation = math.mul(rotation, meshRotation);
 
                 var height = math.lerp(p.minHeight, p.maxHeight, rng.NextFloat());
                 var width = math.lerp(p.minWidth, p.maxWidth, rng.NextFloat());
                 var scale = new float3(width, height, width);
 
-                var matrix = math.mul(math.mul(
-                    float4x4.Translate(position),
-                    float4x4.Scale(scale)),
-                    new float4x4(combinedRotation, float3.zero));
+                var matrix = math.mul(
+                    float4x4.TRS(position, rotation, scale),
+                    new float4x4(meshRotation, float3.zero));
 
                 var meshInstance = new FoliageRenderer.MeshInstanceData
                 {
