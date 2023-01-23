@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using Cinemachine;
+using SOUP;
 using UnityEngine;
 using UnityEngine.Audio;
 using UnityEngine.InputSystem;
@@ -13,6 +14,9 @@ using UnityEngine.VFX;
 public class PlayerController : MonoBehaviour
 {
     private const float EPSILON = 0.001f;
+
+    [Header("SOUP")]
+    [SerializeField] private GameObjectValue playerGameObjectValue;
 
     [Header("Camera")]
     [SerializeField] private Transform cameraFollowTarget;
@@ -202,10 +206,15 @@ public class PlayerController : MonoBehaviour
     private void OnEnable()
     {
         controls.Player.Enable();
+        playerGameObjectValue.Value = this.gameObject;
     }
 
     private void OnDisable()
     {
+        if (playerGameObjectValue.Value == this.gameObject)
+        {
+            playerGameObjectValue.Value = null;
+        }
         controls.Player.Disable();
     }
 

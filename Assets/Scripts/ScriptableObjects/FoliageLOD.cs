@@ -10,6 +10,7 @@ using Unity.Profiling;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.Pool;
+using UnityEngine.Rendering;
 
 [CreateAssetMenu(menuName = "Foliage/Foliage LOD")]
 public class FoliageLOD : ScriptableObject
@@ -17,6 +18,7 @@ public class FoliageLOD : ScriptableObject
     public Mesh[] meshes;
     public Material[] materials;
     public float maxDistance;
+    public ShadowCastingMode shadowCastingMode;
 
     public static Bounds SumBounds(FoliageLOD[] lods)
     {

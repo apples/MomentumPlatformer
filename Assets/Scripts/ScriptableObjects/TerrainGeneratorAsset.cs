@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using SOUP;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 using Unity.Jobs;
@@ -217,8 +218,10 @@ public class TerrainGeneratorAsset : ScriptableObject
         ApplyTerrainData(ref job, terrainData);
         // gameObject.SetActive(true);
 
+        var chunkOrigin = GetChunkPosition(job.chunkX, job.chunkZ);
+
         gameObject.name = $"{terrainName}_{job.chunkX}_{job.chunkZ}";
-        gameObject.transform.position = GetChunkPosition(job.chunkX, job.chunkZ);
+        gameObject.transform.position = chunkOrigin;
 
         gameObject.GetComponent<Terrain>().treeDistance = terrainTreeDrawDistance;
         gameObject.GetComponent<Terrain>().Flush();
@@ -234,7 +237,7 @@ public class TerrainGeneratorAsset : ScriptableObject
 
             var foliageInstanceRenderer = foliageObject.GetComponent<FoliageRenderer>();
 
-            foliageInstanceRenderer.lods = foliageData.lods;
+            foliageInstanceRenderer.layerData = foliageData;
 
             var foliageBounds = foliageResult.bounds;
 
