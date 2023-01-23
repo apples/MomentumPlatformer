@@ -31,39 +31,53 @@ public class TerrainGeneratorAsset : ScriptableObject
     public string terrainName = "Terrain";
     public float originRange = 80000;
     public float terrainTreeDrawDistance = 1000;
-    public uint seed = 0;
     public TerrainLayer baseLayer;
+    public uint seed = 0;
     public List<TerrainLayer> terrainLayers = new List<TerrainLayer>();
     public GameObject sigilPrefab;
     public List<FoliageLayer> foliage = new List<FoliageLayer>();
 
-    private uint cacheSeed = 0;
-    private float2 cacheOrigin = new float2(0, 0);
-    private uint cacheChunkSeedBase = 0;
+    public struct SeedData
+    {
+        public uint seed;
+        public float2 origin;
+        public uint chunkSeedBase;
+    }
+
+    private SeedData cacheSeed;
+
+    public SeedData Seed
+    {
+        get
+        {
+            if (cacheSeed.seed == 0)
+            {
+                cacheSeed.seed = seed;
+                var attempts = 5;
+                while (cacheSeed.seed == 0)
+                {
+                    cacheSeed.seed = MakeRandomSeed();
+                    if (--attempts == 0)
+                    {
+                        cacheSeed.seed = 1;
+                        Debug.LogWarning("Failed to generate a random seed, using 1 instead");
+                        break;
+                    }
+                }
+                var rng = new Unity.Mathematics.Random(cacheSeed.seed);
+                cacheSeed.origin = new float2((float)((rng.NextDouble() - 0.5) * originRange), (float)((rng.NextDouble() - 0.5) * originRange));
+                cacheSeed.chunkSeedBase = rng.NextUInt();
+                Debug.Log($"Generated new origin {cacheSeed.origin} and seed {cacheSeed.seed}");
+            }
+
+            return cacheSeed;
+        }
+    }
 
     private (float2, uint) GetOriginAndSeed(int chunkX, int chunkZ)
     {
-        if (cacheSeed == 0)
-        {
-            cacheSeed = seed;
-            var attempts = 5;
-            while (cacheSeed == 0)
-            {
-                cacheSeed = MakeRandomSeed();
-                if (--attempts == 0)
-                {
-                    cacheSeed = 1;
-                    Debug.LogWarning("Failed to generate a random seed, using 1 instead");
-                    break;
-                }
-            }
-            var rng = new Unity.Mathematics.Random(cacheSeed);
-            cacheOrigin = new float2((float)((rng.NextDouble() - 0.5) * originRange), (float)((rng.NextDouble() - 0.5) * originRange));
-            cacheChunkSeedBase = rng.NextUInt();
-            Debug.Log($"Generated new origin {cacheOrigin} and seed {cacheSeed}");
-        }
-
-        return (cacheOrigin, cacheChunkSeedBase ^ (uint)(chunkX << 16) ^ (uint)chunkZ);
+        var s = Seed;
+        return (s.origin, s.chunkSeedBase ^ (uint)(chunkX << 16) ^ (uint)chunkZ);
     }
 
     public enum NoiseType
