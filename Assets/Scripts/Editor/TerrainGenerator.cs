@@ -109,7 +109,7 @@ public class TerrainGenerator : EditorWindow
             terrainObjectsProp.arraySize = asset.numChunks;
         }
 
-        var rng = new Unity.Mathematics.Random(asset.seed == 0 ? MakeRandomSeed() : asset.seed);
+        var rng = new Unity.Mathematics.Random(asset.Seed.seed);
 
         var origin = new float2((float)((rng.NextDouble() - 0.5) * asset.originRange), (float)((rng.NextDouble() - 0.5) * asset.originRange));
 

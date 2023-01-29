@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using SOUP;
 using Unity.Jobs;
 using Unity.Profiling;
 using UnityEngine;
@@ -14,6 +15,7 @@ public class RuntimeTerrainGenerator : MonoBehaviour
     [SerializeField] private float viewRadius;
     [SerializeField] private TerrainGeneratorAsset asset;
     [SerializeField] private GameObject terrainChunkPrefab;
+    [SerializeField] private GameObjectValue playerGameObjectValue;
 
     private Dictionary<Vector2Int, Chunk> terrainChunks = new Dictionary<Vector2Int, Chunk>(32);
     private List<Chunk> pendingChunks = new List<Chunk>(32);
@@ -262,7 +264,8 @@ public class RuntimeTerrainGenerator : MonoBehaviour
             var foliageRoot = new GameObject($"Foliage_{foliage.name}");
             foliageRoot.transform.SetParent(obj.transform, false);
             foliageRoot.AddComponent<FoliageRoot>().foliageLayer = foliage;
-            foliageRoot.AddComponent<FoliageRenderer>();
+            var renderer = foliageRoot.AddComponent<FoliageRenderer>();
+            renderer.playerGameObjectValue = playerGameObjectValue;
         }
 
         return obj;

@@ -18,7 +18,10 @@ public class FoliageLayer : ScriptableObject
         inverted = false,
         forcedChance = 0f,
         meshRotationEuler = new Vector3(-90f, 0f, 0f),
+        enablePlayerDeformation = false,
+        playerDeformationRadius = 1f,
     };
+
     public FoliageLOD[] lods;
     public GameObject prefab;
 
@@ -34,6 +37,7 @@ public class FoliageLayer : ScriptableObject
         public bool inverted;
         public float forcedChance;
         public Vector3 meshRotationEuler;
+        public bool enablePlayerDeformation;
+        public float playerDeformationRadius;
     }
-
 }

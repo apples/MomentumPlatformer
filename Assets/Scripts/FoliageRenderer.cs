@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using Cinemachine;
+using SOUP;
 using UnityEngine;
 using UnityEngine.Audio;
 using UnityEngine.InputSystem;
@@ -11,7 +12,33 @@ using UnityEngine.VFX;
 
 public class FoliageRenderer : MonoBehaviour
 {
-    public FoliageLOD[] lods;
+    private static byte[] defaultDeformationPixel = new byte[] { 127, 127, 0 };
+    private static Dictionary<int, byte[]> cachedDeformationTextureInitializers;
+
+    private byte[] GetCachedDeformationTextureData(int size)
+    {
+        if (cachedDeformationTextureInitializers == null)
+        {
+            cachedDeformationTextureInitializers = new Dictionary<int, byte[]>(1);
+        }
+        if (cachedDeformationTextureInitializers.TryGetValue(size, out var cached))
+        {
+            return cached;
+        }
+
+        var pix = new byte[size * size * 3];
+        for (int i = 0; i < size * size * 3; ++i)
+        {
+            pix[i] = defaultDeformationPixel[i % 3];
+        }
+
+        cachedDeformationTextureInitializers[size] = pix;
+
+        return pix;
+    }
+
+    public FoliageLayer layerData;
+    public GameObjectValue playerGameObjectValue;
 
     private ComputeBuffer perInstanceDataBuffer;
     private ComputeBuffer[][] meshArgBuffers;
@@ -34,14 +61,14 @@ public class FoliageRenderer : MonoBehaviour
         {
             var closest = bounds.ClosestPoint(Camera.main.transform.position);
             var distance = Vector3.Distance(closest, Camera.main.transform.position);
-            for (int i = 0; i < lods.Length; i++)
+            for (int i = 0; i < layerData.lods.Length; i++)
             {
-                if (distance <= lods[i].maxDistance)
+                if (distance <= layerData.lods[i].maxDistance)
                 {
-                    return (lods[i], i);
+                    return (layerData.lods[i], i);
                 }
             }
-            return (null, lods.Length);
+            return (null, layerData.lods.Length);
         }
     }
 
@@ -105,6 +132,11 @@ public class FoliageRenderer : MonoBehaviour
 
         for (int j = 0; j < lod.meshes.Length; j++)
         {
+            if (layerData.foliageParams.enablePlayerDeformation && playerGameObjectValue != null && playerGameObjectValue.Value != null)
+            {
+                materialInstances[i][j].SetVector("_DeformationSourcePos", playerGameObjectValue.Value.transform.position);
+            }
+
             Graphics.DrawMeshInstancedIndirect(
                 lod.meshes[j],
                 0,
@@ -125,7 +157,7 @@ public class FoliageRenderer : MonoBehaviour
 
     private void MakeArgBuffers(int numInstances)
     {
-        if (lods.Length == 0)
+        if (layerData.lods.Length == 0)
         {
             return;
         }
@@ -158,16 +190,16 @@ public class FoliageRenderer : MonoBehaviour
             }
         }
 
-        meshArgBuffers = new ComputeBuffer[lods.Length][];
-        materialInstances = new Material[lods.Length][];
-        for (int i = 0; i < lods.Length; i++)
+        meshArgBuffers = new ComputeBuffer[layerData.lods.Length][];
+        materialInstances = new Material[layerData.lods.Length][];
+        for (int lodIndex = 0; lodIndex < layerData.lods.Length; lodIndex++)
         {
-            meshArgBuffers[i] = new ComputeBuffer[lods[i].meshes.Length];
-            materialInstances[i] = new Material[lods[i].meshes.Length];
-            for (int j = 0; j < lods[i].meshes.Length; j++)
+            meshArgBuffers[lodIndex] = new ComputeBuffer[layerData.lods[lodIndex].meshes.Length];
+            materialInstances[lodIndex] = new Material[layerData.lods[lodIndex].meshes.Length];
+            for (int materialIndex = 0; materialIndex < layerData.lods[lodIndex].meshes.Length; materialIndex++)
             {
-                var mesh = lods[i].meshes[j];
-                var material = lods[i].materials[j];
+                var mesh = layerData.lods[lodIndex].meshes[materialIndex];
+                var material = layerData.lods[lodIndex].materials[materialIndex];
 
                 uint[] args = new uint[5] { 0, 0, 0, 0, 0 };
                 args[0] = (uint)mesh.GetIndexCount(0);
@@ -175,11 +207,25 @@ public class FoliageRenderer : MonoBehaviour
                 args[2] = (uint)mesh.GetIndexStart(0);
                 args[3] = (uint)mesh.GetBaseVertex(0);
 
-                meshArgBuffers[i][j] = new ComputeBuffer(1, args.Length * sizeof(uint), ComputeBufferType.IndirectArguments);
-                meshArgBuffers[i][j].SetData(args);
+                meshArgBuffers[lodIndex][materialIndex] = new ComputeBuffer(1, args.Length * sizeof(uint), ComputeBufferType.IndirectArguments);
+                meshArgBuffers[lodIndex][materialIndex].SetData(args);
 
-                materialInstances[i][j] = Instantiate(material);
-                materialInstances[i][j].SetBuffer("_PerInstanceData", perInstanceDataBuffer);
+                materialInstances[lodIndex][materialIndex] = Instantiate(material);
+                materialInstances[lodIndex][materialIndex].SetBuffer("_PerInstanceData", perInstanceDataBuffer);
+
+                if (layerData.foliageParams.enablePlayerDeformation)
+                {
+                    materialInstances[lodIndex][materialIndex].SetFloat("_EnableDeformation", 1);
+                    materialInstances[lodIndex][materialIndex].SetFloat("_DeformationRadius", layerData.foliageParams.playerDeformationRadius);
+                    if (playerGameObjectValue != null && playerGameObjectValue.Value != null)
+                    {
+                        materialInstances[lodIndex][materialIndex].SetVector("_DeformationSourcePos", playerGameObjectValue.Value.transform.position);
+                    }
+                    else
+                    {
+                        materialInstances[lodIndex][materialIndex].SetVector("_DeformationSourcePos", Vector3.positiveInfinity);
+                    }
+                }
             }
         }
     }
