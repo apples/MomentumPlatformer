@@ -28,8 +28,8 @@ MonoBehaviour:
   terrainName: GreenHill
   originRange: 800
   terrainTreeDrawDistance: 1000
-  seed: 324
   baseLayer: {fileID: 8574412962073106934, guid: f910952a4083662469f19829e7c57aea, type: 2}
+  seed: 0
   terrainLayers:
   - {fileID: 8574412962073106934, guid: fc7fa8e7078696342a94a23932af2b5f, type: 2}
   sigilPrefab: {fileID: 8173067174147102333, guid: a124cfd154f7b91418adc46fe0ddcde8, type: 3}

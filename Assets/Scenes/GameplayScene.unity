@@ -1009,6 +1009,25 @@ CapsuleCollider:
   m_Height: 0.0023985424
   m_Direction: 1
   m_Center: {x: 0, y: 0.0011992712, z: 0}
+--- !u!1 &944765141 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 9181517232826899310, guid: af8273439328aea49901952e7663a8ca, type: 3}
+  m_PrefabInstance: {fileID: 9181517233704962256}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &944765146
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 944765141}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d44c74b93b997714fbd5a72128bc0f44, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  initialPoolCapacity: 100
+  maxPoolSize: 1000
 --- !u!137 &1290605498
 SkinnedMeshRenderer:
   m_ObjectHideFlags: 0
@@ -2097,6 +2116,34 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: -95.5412
       objectReference: {fileID: 0}
+    - target: {fileID: 4286438622549371959, guid: 860d06fe789a208448a4d2401e23b280, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0.49999982
+      objectReference: {fileID: 0}
+    - target: {fileID: 4286438622549371959, guid: 860d06fe789a208448a4d2401e23b280, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 1.381958
+      objectReference: {fileID: 0}
+    - target: {fileID: 4286438622549371959, guid: 860d06fe789a208448a4d2401e23b280, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: -1.8281252
+      objectReference: {fileID: 0}
+    - target: {fileID: 4286438622549371959, guid: 860d06fe789a208448a4d2401e23b280, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 0.9870655
+      objectReference: {fileID: 0}
+    - target: {fileID: 4286438622549371959, guid: 860d06fe789a208448a4d2401e23b280, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0.08937846
+      objectReference: {fileID: 0}
+    - target: {fileID: 4286438622549371959, guid: 860d06fe789a208448a4d2401e23b280, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: -0.13254923
+      objectReference: {fileID: 0}
+    - target: {fileID: 4286438622549371959, guid: 860d06fe789a208448a4d2401e23b280, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0.012002286
+      objectReference: {fileID: 0}
     - target: {fileID: 4541766938091290731, guid: 860d06fe789a208448a4d2401e23b280, type: 3}
       propertyPath: m_LocalEulerAnglesHint.x
       value: -89.98021
@@ -2283,6 +2330,22 @@ PrefabInstance:
     serializedVersion: 2
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: 9181517232826899216, guid: af8273439328aea49901952e7663a8ca, type: 3}
+      propertyPath: m_EnableTreeColliders
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 9181517232826899217, guid: af8273439328aea49901952e7663a8ca, type: 3}
+      propertyPath: m_DrawHeightmap
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 9181517232826899217, guid: af8273439328aea49901952e7663a8ca, type: 3}
+      propertyPath: m_DrawTreesAndFoliage
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 9181517232826899217, guid: af8273439328aea49901952e7663a8ca, type: 3}
+      propertyPath: m_DetailObjectDistance
+      value: 250
+      objectReference: {fileID: 0}
     - target: {fileID: 9181517233325800772, guid: af8273439328aea49901952e7663a8ca, type: 3}
       propertyPath: m_Name
       value: TerrainGroup_0
