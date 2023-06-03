@@ -514,6 +514,7 @@ public class PlayerController : MonoBehaviour
             return;
         }
 
+        // ground sensing
         var groundSensed = CastCollider(rigidbody.position, rigidbody.rotation, rigidbody.rotation * Vector3.down, groundSenseDistance, out var groundHit);
 
         var groundHitNormal = groundSensed ? GetTrueNormal(groundHit) : Vector3.up;
@@ -723,6 +724,19 @@ public class PlayerController : MonoBehaviour
         hit = hits.Where(h => h.collider.transform != transform).OrderBy(h => h.distance).FirstOrDefault();
 
         return hits.Any(h => h.collider.transform != transform);
+    }
+
+    private bool OverlapCollider(Vector3 position, Quaternion rotation, out Collider[] results)
+    {
+        var halfHeight = Vector3.up * (capsuleCollider.height * 0.5f - capsuleCollider.radius);
+        var p1 = rotation * (capsuleCollider.center + halfHeight) + position;
+        var p2 = rotation * (capsuleCollider.center - halfHeight) + position;
+
+        results = Physics.OverlapCapsule(p1, p2, capsuleCollider.radius, ~0, QueryTriggerInteraction.Ignore)
+            .Where(c => c.transform != transform)
+            .ToArray();
+
+        return results.Length != 0;
     }
 
     public void CheckTimer(float timer)
