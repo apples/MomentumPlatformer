@@ -115,6 +115,8 @@ public class PlayerController : MonoBehaviour
     private float trickYaw;
     private float trickPitch;
 
+    public SOUP.FloatValue currentSpeed;
+
     private class SavedState
     {
         public Vector3 position;
@@ -420,6 +422,8 @@ public class PlayerController : MonoBehaviour
 
             velocity += planarGravity * Time.deltaTime;
         }
+
+        currentSpeed.Value = (int)velocity.magnitude;
 
         // camera
 
