@@ -115,8 +115,6 @@ public class PlayerController : MonoBehaviour
     private float trickYaw;
     private float trickPitch;
 
-    public SOUP.FloatValue currentSpeed;
-
     private class SavedState
     {
         public Vector3 position;
@@ -423,8 +421,6 @@ public class PlayerController : MonoBehaviour
             velocity += planarGravity * Time.deltaTime;
         }
 
-        currentSpeed.Value = (int)velocity.magnitude;
-
         // camera
 
         {
@@ -606,6 +602,26 @@ public class PlayerController : MonoBehaviour
 
         var remainingMotion = velocity * deltaTime;
         var remainingTime = deltaTime;
+
+        // de-penetrate
+        if (OverlapCollider(position, rotation, out var preOverlaps))
+        {
+            foreach (var hit in preOverlaps)
+            {
+                if (Physics.ComputePenetration(
+                    capsuleCollider,
+                    position,
+                    rotation,
+                    hit,
+                    hit.transform.position,
+                    hit.transform.rotation,
+                    out var resolveDirection,
+                    out var distance))
+                {
+                    position += resolveDirection * distance;
+                }
+            }
+        }
 
         for (var bounces = 0; bounces < maxBounces && remainingMotion.magnitude > 0f; ++bounces)
         {
