@@ -27,12 +27,19 @@ public class PlayerController : MonoBehaviour
     [SerializeField] private float cameraNaturalTilt = 15f;
 
     [Header("Physics")]
+    [SerializeField] private LayerMask playerLayerMask;
+    [SerializeField] private SphereCollider bodySphereCollider;
+    [SerializeField] private SphereCollider headSphereCollider;
+    [SerializeField] private float castMargin = 0.05f;
     [SerializeField] private float groundAcceleration = 1f;
     [SerializeField] private float airAcceleration = 1f;
     [SerializeField] private float maxSpeed = 20f;
     [SerializeField] private float jumpForce = 100f;
     [SerializeField] private float gravity = 20f;
-    [SerializeField] private float groundSenseDistance = 0.1f;
+    [SerializeField] private float legSpringRestingDistance = 0.25f;
+    [SerializeField] private float legSpringStretchDistance = 0.5f;
+    [SerializeField] private float legSpringConstant = 0.5f;
+    [SerializeField] private float legSpringDampingRatio = 0.5f;
     [SerializeField] private bool snapToGround = false;
     [SerializeField] private int maxBounces;
     [SerializeField] private float angleCollisionPower;
@@ -87,7 +94,6 @@ public class PlayerController : MonoBehaviour
     [SerializeField] private float trickPitchThreshold = 100f;
 
     private new Rigidbody rigidbody;
-    private CapsuleCollider capsuleCollider;
 
     private PlayerControls controls;
 
@@ -97,7 +103,9 @@ public class PlayerController : MonoBehaviour
     private Quaternion cameraRotation;
 
     private bool isGrounded;
+    private bool isStretching;
     private Vector3 surfacePlane;
+    private float groundDistance;
 
     private bool isSliding = false;
 
@@ -114,6 +122,8 @@ public class PlayerController : MonoBehaviour
     private bool doingTrick = false;
     private float trickYaw;
     private float trickPitch;
+
+    private Quaternion boardFlatRotation;
 
     private class SavedState
     {
@@ -138,7 +148,6 @@ public class PlayerController : MonoBehaviour
     private void Awake()
     {
         rigidbody = GetComponent<Rigidbody>();
-        capsuleCollider = GetComponent<CapsuleCollider>();
 
         controls = new PlayerControls();
         controls.Player.SaveState.performed += SaveState;
@@ -224,6 +233,7 @@ public class PlayerController : MonoBehaviour
         rotation = rigidbody.rotation;
         cameraRotation = cameraFollowTarget.rotation;
         ragdollVCam.Priority = 0;
+        boardFlatRotation = board.transform.localRotation;
     }
 
     private void Update()
@@ -251,6 +261,8 @@ public class PlayerController : MonoBehaviour
             return;
         }
 
+        var currentPlanarVelocity = Vector3.ProjectOnPlane(velocity, surfacePlane);
+
         // inputs
 
         if (controls.Player.Slide.WasPressedThisFrame())
@@ -258,7 +270,18 @@ public class PlayerController : MonoBehaviour
             isSliding = !isSliding;
         }
 
+        // board visuals
         board.SetActive(isSliding);
+        if (isGrounded)
+        {
+            board.transform.localPosition = Vector3.down * groundDistance;
+            board.transform.rotation = Quaternion.LookRotation(rotation * Vector3.forward, surfacePlane) * boardFlatRotation;
+        }
+        else
+        {
+            board.transform.localPosition = Vector3.zero;
+            board.transform.localRotation = boardFlatRotation;
+        }
 
         var lookInput = controls.Player.Look.ReadValue<Vector2>();
 
@@ -280,9 +303,8 @@ public class PlayerController : MonoBehaviour
             // this is the velocity at which the player "wants" to go, based on their input
             var idealVelocity = (moveInput.x * moveRight + moveInput.y * moveForward) * maxSpeed;
 
-            var currentPlanarVelocity = Vector3.ProjectOnPlane(velocity, surfacePlane);
             var accelerationCorrectionVector = idealVelocity - currentPlanarVelocity;
-            var acceleration = isGrounded ? groundAcceleration : airAcceleration;
+            var acceleration = (isGrounded && !isStretching) ? groundAcceleration : airAcceleration;
 
             // the final acceleration to apply
             var appliedAcceleration = Mathf.Min(accelerationCorrectionVector.magnitude, acceleration * Time.deltaTime) * (accelerationCorrectionVector != Vector3.zero ? accelerationCorrectionVector.normalized : Vector3.zero);
@@ -313,7 +335,6 @@ public class PlayerController : MonoBehaviour
             {
                 rotation = Quaternion.LookRotation(Vector3.ProjectOnPlane(rotation * Vector3.forward, surfacePlane), surfacePlane);
 
-                var currentPlanarVelocity = Vector3.ProjectOnPlane(velocity, surfacePlane);
                 var velocityDirection = currentPlanarVelocity.normalized;
 
                 var boardForward = Vector3.ProjectOnPlane(rotation * Vector3.forward, surfacePlane).normalized;
@@ -399,27 +420,10 @@ public class PlayerController : MonoBehaviour
                     hasTrick = true;
                 }
             }
+
         }
 
         skidEffect.transform.rotation = Quaternion.identity;
-
-        // gravity
-
-        if (!isGrounded)
-        {
-            velocity += Vector3.down * gravity * Time.deltaTime;
-        }
-        else
-        {
-            var planarGravity = Vector3.ProjectOnPlane(Vector3.down * gravity, surfacePlane);
-
-            if (!isSliding)
-            {
-                planarGravity *= groundedGravityFactor;
-            }
-
-            velocity += planarGravity * Time.deltaTime;
-        }
 
         // camera
 
@@ -433,7 +437,6 @@ public class PlayerController : MonoBehaviour
             {
                 var forward = Vector3.ProjectOnPlane(transform.forward, surfacePlane).normalized;
 
-                var currentPlanarVelocity = Vector3.ProjectOnPlane(velocity, surfacePlane);
                 if (isSliding && Vector3.Dot(forward, currentPlanarVelocity) < -EPSILON)
                 {
                     forward = -forward;
@@ -515,7 +518,7 @@ public class PlayerController : MonoBehaviour
         }
 
         // ground sensing
-        var groundSensed = CastCollider(rigidbody.position, rigidbody.rotation, rigidbody.rotation * Vector3.down, groundSenseDistance, out var groundHit);
+        var groundSensed = CastBodyCollider(rigidbody.position, rigidbody.rotation, rigidbody.rotation * Vector3.down, legSpringStretchDistance, out var groundHit);
 
         var groundHitNormal = groundSensed ? GetTrueNormal(groundHit) : Vector3.up;
 
@@ -533,20 +536,22 @@ public class PlayerController : MonoBehaviour
         }
 
         // tumble
-        if (isSliding && !groundSensed && CastCollider(rigidbody.position, rigidbody.rotation, rigidbody.rotation * Vector3.up, groundSenseDistance, out var headHit))
-        {
-            if (headHit.point != Vector3.zero)
-            {
-                StartRagdoll();
-                return;
-            }
-        }
+        // if (isSliding && !groundSensed && CastBodyCollider(rigidbody.position, rigidbody.rotation, rigidbody.rotation * Vector3.up, groundSenseDistance, out var headHit))
+        // {
+        //     if (headHit.point != Vector3.zero)
+        //     {
+        //         StartRagdoll();
+        //         return;
+        //     }
+        // }
 
         // flag
         isGrounded = groundSensed;
+        isStretching = groundSensed && groundHit.distance > legSpringRestingDistance;
         if (isGrounded)
         {
             lastTouchedGround = 0f;
+            groundDistance = groundHit.distance - legSpringRestingDistance;
         }
         else
         {
@@ -571,15 +576,23 @@ public class PlayerController : MonoBehaviour
         {
             velocity += surfacePlane * jumpForce;
             isGrounded = false;
+            isStretching = false;
             lastTouchedGround = .2f;
         }
 
         jumpRequested = false;
 
+        // gravity
+
+
+        // leg spring
+        FixedUpdateLegSpring(ref groundHit, groundVelocity.GetValueOrDefault(), groundHitNormal);
+        velocity += Vector3.down * gravity * Time.deltaTime;
+
         // snap to surface
         if (snapToGround && isGrounded)
         {
-            rigidbody.position += Vector3.down * (groundHit.distance - EPSILON) + Vector3.up * EPSILON;
+            rigidbody.position += Vector3.down * groundHit.distance;
         }
 
         // update rigidbody
@@ -595,6 +608,33 @@ public class PlayerController : MonoBehaviour
         
     }
 
+    private void FixedUpdateLegSpring(ref RaycastHit groundHit, Vector3 groundVelocity, Vector3 groundHitNormal)
+    {
+        if (!isGrounded)
+        {
+            return;
+        }
+
+        float legDisplacement = groundHit.distance - legSpringRestingDistance;
+
+        if (legDisplacement > 0f)
+        {
+            return;
+        }
+
+        float legDisplacementVelocity = -Vector3.Dot(groundVelocity + velocity, groundHitNormal);
+
+        float springForce = -legSpringConstant * legDisplacement;
+        
+        float dampingForce = 2f * Mathf.Sqrt(legSpringConstant) * legSpringDampingRatio * legDisplacementVelocity;
+
+        float finalForce = legDisplacement > 0f ? 0f : (springForce + dampingForce);
+
+        Vector3 impulse = rotation * Vector3.up * finalForce / rigidbody.mass;
+
+        velocity += impulse * Time.deltaTime;
+    }
+
     private void MoveAndSlide(float deltaTime, float minWallAngle)
     {
         var position = rigidbody.position;
@@ -604,12 +644,12 @@ public class PlayerController : MonoBehaviour
         var remainingTime = deltaTime;
 
         // de-penetrate
-        if (OverlapCollider(position, rotation, out var preOverlaps))
+        if (OverlapBodyCollider(position, rotation, out var preOverlaps))
         {
             foreach (var hit in preOverlaps)
             {
                 if (Physics.ComputePenetration(
-                    capsuleCollider,
+                    bodySphereCollider,
                     position,
                     rotation,
                     hit,
@@ -630,17 +670,10 @@ public class PlayerController : MonoBehaviour
             var direction = remainingMotion.normalized;
 
             // Do a cast of the collider to see if an object is hit during this movement bounce
-            if (!CastCollider(position, rotation, direction, remainingDist, out var hit))
+            if (!CastBodyCollider(position, rotation, direction, remainingDist, out var hit))
             {
                 // If there is no hit, move to desired position and exit
                 position += remainingMotion;
-
-                // Apply gravity!
-                var gravityDist = 0.5f * gravity * Mathf.Pow(remainingTime, 2);
-                var didGravityHit = CastCollider(position, rotation, Vector3.down, gravityDist, out var gravityHit);
-                var gravityAccel = gravityHit.distance > EPSILON ? Vector3.down * (gravityHit.distance - EPSILON) + Vector3.up * EPSILON : gravityDist * Vector3.down;
-
-                position += gravityAccel;
                 break;
             }
 
@@ -648,7 +681,7 @@ public class PlayerController : MonoBehaviour
             if (hit.distance < EPSILON)
             {
                 if (Physics.ComputePenetration(
-                    capsuleCollider,
+                    bodySphereCollider,
                     position,
                     rotation,
                     hit.collider,
@@ -661,7 +694,7 @@ public class PlayerController : MonoBehaviour
                 }
                 else
                 {
-                    CastCollider(position + Vector3.up * overlapCorrectionDistance, rotation, Vector3.down, overlapCorrectionDistance, out var hit2);
+                    CastBodyCollider(position + Vector3.up * overlapCorrectionDistance, rotation, Vector3.down, overlapCorrectionDistance, out var hit2);
 
                     // if we're still overlapping something, just give up lol
                     if (hit2.distance < EPSILON)
@@ -733,26 +766,25 @@ public class PlayerController : MonoBehaviour
         return hit.normal;
     }
 
-    private bool CastCollider(Vector3 position, Quaternion rotation, Vector3 direction, float distance, out RaycastHit hit)
+    private bool CastBodyCollider(Vector3 position, Quaternion rotation, Vector3 direction, float distance, out RaycastHit hit)
     {
-        var halfHeight = Vector3.up * (capsuleCollider.height * 0.5f - capsuleCollider.radius);
-        var p1 = rotation * (capsuleCollider.center + halfHeight) + position;
-        var p2 = rotation * (capsuleCollider.center - halfHeight) + position;
+        var p1 = rotation * bodySphereCollider.center + position;
 
-        var hits = Physics.CapsuleCastAll(p1, p2, capsuleCollider.radius - EPSILON, direction, distance, ~0, QueryTriggerInteraction.Ignore);
+        var didHit = Physics.SphereCast(p1, bodySphereCollider.radius - castMargin, direction, out hit, distance + castMargin, ~playerLayerMask.value, QueryTriggerInteraction.Ignore);
 
-        hit = hits.Where(h => h.collider.transform != transform).OrderBy(h => h.distance).FirstOrDefault();
+        if (didHit)
+        {
+            hit.distance -= castMargin;
+        }
 
-        return hits.Any(h => h.collider.transform != transform);
+        return didHit;
     }
 
-    private bool OverlapCollider(Vector3 position, Quaternion rotation, out Collider[] results)
+    private bool OverlapBodyCollider(Vector3 position, Quaternion rotation, out Collider[] results)
     {
-        var halfHeight = Vector3.up * (capsuleCollider.height * 0.5f - capsuleCollider.radius);
-        var p1 = rotation * (capsuleCollider.center + halfHeight) + position;
-        var p2 = rotation * (capsuleCollider.center - halfHeight) + position;
+        var p1 = rotation * bodySphereCollider.center + position;
 
-        results = Physics.OverlapCapsule(p1, p2, capsuleCollider.radius, ~0, QueryTriggerInteraction.Ignore)
+        results = Physics.OverlapSphere(p1, bodySphereCollider.radius, ~playerLayerMask.value, QueryTriggerInteraction.Ignore)
             .Where(c => c.transform != transform)
             .ToArray();
 
