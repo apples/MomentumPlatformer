@@ -1,5 +1,6 @@
 
 *.zip
+*.blend[0-9]
 
 [Ll]ibrary/
 [Tt]emp/
@@ -46,6 +47,7 @@ sysinfo.txt
 # Builds
 *.apk
 *.unitypackage
+Builds/
 
 # Crashlytics generated file
 crashlytics-build.properties

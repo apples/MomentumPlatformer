@@ -45,11 +45,10 @@ public class PlayerController : MonoBehaviour
     [SerializeField] private float angleCollisionPower;
     [SerializeField] private float groundedGravityFactor = 0f;
     [SerializeField] private float overlapCorrectionDistance = 0.1f;
+    [SerializeField] private float walkingFriction = 0.9f;
 
     [Header("Sliding Physics")]
     [SerializeField] private float slideSteeringAngularSpeedDeg = 90f;
-    [SerializeField] private float slideSkidAngle = 10f;
-    [SerializeField] private float snowMassEquivalent = 0.1f;
     [SerializeField] private float carvingTurnFactor = 0.9f;
 
     [Header("Board")]
@@ -106,6 +105,10 @@ public class PlayerController : MonoBehaviour
     private bool isStretching;
     private Vector3 surfacePlane;
     private float groundDistance;
+    private Vector3 groundPosition;
+    private Collider groundCollider;
+    private SurfaceData groundSurface;
+    private Terrain groundTerrain;
 
     private bool isSliding = false;
 
@@ -348,6 +351,36 @@ public class PlayerController : MonoBehaviour
 
                 var snowAngle = Vector3.SignedAngle(velocityDirection, boardForward, surfacePlane);
 
+                var surfaceFriction = groundSurface.frictionCoefficients[0];
+                var slideSkidAngle = groundSurface.skidAngle[0];
+                var snowMassEquivalent = groundSurface.particleWeights[0];
+                var particleColor = groundSurface.particleColors[0];
+
+                if (groundTerrain != null)
+                {
+                    var localPosition = groundTerrain.transform.worldToLocalMatrix * groundPosition;
+                    var localPosition2d = new Vector2(localPosition.x, localPosition.z);
+                    var alphamapSize = new Vector2Int(groundTerrain.terrainData.alphamapWidth, groundTerrain.terrainData.alphamapHeight);
+                    var uv = localPosition2d * alphamapSize / groundTerrain.terrainData.size;
+                    var count = groundTerrain.terrainData.alphamapLayers;
+
+                    var pixel = groundTerrain.terrainData.GetAlphamaps((int)uv.x, (int)uv.y, 1, 1);
+
+                    surfaceFriction = 0f;
+                    slideSkidAngle = 0f;
+                    snowMassEquivalent = 0f;
+                    particleColor = Color.black;
+
+                    for (var i = 0; i < count; ++i)
+                    {
+                        var w = pixel[0, 0, i];
+                        surfaceFriction += w * groundSurface.frictionCoefficients[i];
+                        slideSkidAngle += w * groundSurface.skidAngle[i];
+                        snowMassEquivalent += w * groundSurface.particleWeights[i];
+                        particleColor += w * groundSurface.particleColors[i];
+                    }
+                }
+
                 // carving
                 if (Mathf.Abs(snowAngle) < slideSkidAngle)
                 {
@@ -357,6 +390,7 @@ public class PlayerController : MonoBehaviour
                     skidEffect.SetFloat("SpawnRate", 5);
                     skidEffect.SetVector3("SpawnDirection", -currentPlanarVelocity.normalized);
                     skidEffect.SetFloat("SpawnVelocity", currentPlanarVelocity.magnitude);
+                    skidEffect.SetVector4("Color", particleColor);
 
                     skidSfxRemainingDebounceTime -= Time.deltaTime;
 
@@ -377,12 +411,18 @@ public class PlayerController : MonoBehaviour
                     skidEffect.SetFloat("SpawnRate", snowForce.magnitude * skidEffectSpawnFactor);
                     skidEffect.SetVector3("SpawnDirection", Vector3.Reflect(-currentPlanarVelocity.normalized, boardRight));
                     skidEffect.SetFloat("SpawnVelocity", currentPlanarVelocity.magnitude);
+                    skidEffect.SetVector4("Color", particleColor);
 
                     var mag = Vector3.Project(currentPlanarVelocity, boardRight).magnitude;
                     boardSfxTargetVolume = Mathf.Clamp01(mag / skidSfxMinSpeed);
                     boardSfx.pitch = Mathf.Lerp(skidSfxMinPitch, skidSfxMaxPitch, Mathf.InverseLerp(skidSfxMinSpeed, skidSfxMaxSpeed, mag));
                     skidSfxRemainingDebounceTime = skidSfxDebounceTime;
                 }
+
+                // friction
+                var boardForwardVelocity = Vector3.Project(currentPlanarVelocity, boardForward);
+                var friction = -boardForwardVelocity * surfaceFriction;
+                velocity += friction * Time.deltaTime;
 
                 // consume trick
                 if (hasTrick)
@@ -520,10 +560,25 @@ public class PlayerController : MonoBehaviour
         // ground sensing
         var groundSensed = CastBodyCollider(rigidbody.position, rigidbody.rotation, rigidbody.rotation * Vector3.down, legSpringStretchDistance, out var groundHit);
 
+        groundPosition = groundHit.point;
+
+        if (groundSensed && groundHit.collider != groundCollider)
+        {
+            groundCollider = groundHit.collider;
+            groundSurface = groundHit.collider.GetComponent<SurfaceData>();
+            groundTerrain = groundHit.collider.GetComponent<Terrain>();
+        }
+
+        if (groundSurface == null)
+        {
+            groundSensed = false;
+            groundTerrain = null;
+        }
+
         var groundHitNormal = groundSensed ? GetTrueNormal(groundHit) : Vector3.up;
 
         Vector3? groundVelocity =
-            groundSensed && groundHit.rigidbody != null ? groundHit.rigidbody.GetPointVelocity(groundHit.point) :
+            groundSensed && groundHit.rigidbody != null ? groundHit.rigidbody.GetPointVelocity(groundPosition) :
             groundSensed && groundHit.rigidbody == null ? Vector3.zero :
             null;
         
@@ -583,11 +638,10 @@ public class PlayerController : MonoBehaviour
         jumpRequested = false;
 
         // gravity
-
+        velocity += Vector3.down * gravity * Time.deltaTime;
 
         // leg spring
         FixedUpdateLegSpring(ref groundHit, groundVelocity.GetValueOrDefault(), groundHitNormal);
-        velocity += Vector3.down * gravity * Time.deltaTime;
 
         // snap to surface
         if (snapToGround && isGrounded)

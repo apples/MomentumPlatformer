@@ -318,9 +318,8 @@ MonoBehaviour:
   angleCollisionPower: 1
   groundedGravityFactor: 0
   overlapCorrectionDistance: 0.1
+  walkingFriction: 0.9
   slideSteeringAngularSpeedDeg: 180
-  slideSkidAngle: 20
-  snowMassEquivalent: 5
   carvingTurnFactor: 0.02
   board: {fileID: 2185042726052540908}
   skidEffect: {fileID: 7412318568426483726}
@@ -725,7 +724,10 @@ VisualEffect:
     m_Vector3f:
       m_Array: []
     m_Vector4f:
-      m_Array: []
+      m_Array:
+      - m_Value: {x: 0.015208514, y: 0.042311423, z: 0.088655606, w: 0}
+        m_Name: Color
+        m_Overridden: 0
     m_Uint:
       m_Array: []
     m_Int:
