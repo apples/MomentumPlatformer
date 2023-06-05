@@ -1,14 +1,19 @@
 using System.Collections;
 using System.Collections.Generic;
+using SOUP;
+using TMPro;
 using UnityEngine;
 
 public class SpeedDisplayController : MonoBehaviour
 {
-    public SOUP.FloatValue currentSpeed;
+    public FloatValue currentSpeed;
+
+    public float capSpeed = 700f;
 
     private List<GameObject> healthbarSegments = new List<GameObject>();
 
-    // Start is called before the first frame update
+    private TextMeshProUGUI tmpUgui;
+
     void Start()
     {
         foreach (Transform segment in transform)
@@ -16,22 +21,21 @@ public class SpeedDisplayController : MonoBehaviour
             healthbarSegments.Add(segment.gameObject);
         }
         healthbarSegments.Sort((a, b) => a.name.CompareTo(b.name));
+
+        tmpUgui = GetComponent<TextMeshProUGUI>();
     }
 
-    // Update is called once per frame
     void Update()
     {
-        transform.GetComponent<TMPro.TextMeshProUGUI>().text = currentSpeed.Value.ToString() + " MPH";
+        var value = (int)(currentSpeed.Value * 3.6f); // km/h
 
-        for(int i = 0; i < Mathf.Min((int)currentSpeed.Value / 10, 17); i++)
+        tmpUgui.text = value.ToString() + " km/h";
+
+        var numChunks = Mathf.Min(value * 17 / capSpeed, 17);
+
+        for(int i = 0; i < 17; i++)
         {
-            //if(!healthbarSegments[i].activeSelf)
-                healthbarSegments[i].SetActive(true);
-        }
-        for (int i = 16; i > (int)currentSpeed.Value / 10; i--)
-        {
-            //if (healthbarSegments[i].activeSelf)
-                healthbarSegments[i].SetActive(false);
+            healthbarSegments[i].SetActive(i < numChunks);
         }
     }
 }

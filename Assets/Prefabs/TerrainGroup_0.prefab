@@ -11,6 +11,9 @@ GameObject:
   - component: {fileID: 9181517232826899311}
   - component: {fileID: 9181517232826899217}
   - component: {fileID: 9181517232826899216}
+  - component: {fileID: 6361698820550174593}
+  - component: {fileID: 1838596378137055678}
+  - component: {fileID: 3939653344501799596}
   m_Layer: 0
   m_Name: Terrain_0_0_85f14955-e14f-4bea-b36b-7e1bfdb5ca1f
   m_TagString: Untagged
@@ -47,7 +50,7 @@ Terrain:
   m_TreeBillboardDistance: 50
   m_TreeCrossFadeLength: 5
   m_TreeMaximumFullLODCount: 50
-  m_DetailObjectDistance: 80
+  m_DetailObjectDistance: 250
   m_DetailObjectDensity: 1
   m_HeightmapPixelError: 5
   m_SplatMapDistance: 1000
@@ -57,16 +60,20 @@ Terrain:
   m_DrawInstanced: 1
   m_DrawTreesAndFoliage: 1
   m_StaticShadowCaster: 0
+  m_IgnoreQualitySettings: 0
   m_ReflectionProbeUsage: 1
   m_MaterialTemplate: {fileID: 2100000, guid: 594ea882c5a793440b60ff72d896021e, type: 2}
   m_BakeLightProbesForTrees: 1
   m_PreserveTreePrototypeLayers: 0
   m_DeringLightProbesForTrees: 1
+  m_ReceiveGI: 1
   m_ScaleInLightmap: 0.8
   m_LightmapParameters: {fileID: 15203, guid: 0000000000000000f000000000000000, type: 0}
   m_GroupingID: 0
   m_RenderingLayerMask: 1
   m_AllowAutoConnect: 1
+  m_EnableHeightmapRayTracing: 1
+  m_EnableTreesAndDetailsRayTracing: 0
 --- !u!154 &9181517232826899216
 TerrainCollider:
   m_ObjectHideFlags: 0
@@ -75,9 +82,79 @@ TerrainCollider:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 9181517232826899310}
   m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_ProvidesContacts: 0
   m_Enabled: 1
+  serializedVersion: 2
   m_TerrainData: {fileID: 15600000, guid: dba7bf7768ba2534b8aab239c9408167, type: 2}
-  m_EnableTreeColliders: 1
+  m_EnableTreeColliders: 0
+--- !u!114 &6361698820550174593
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 9181517232826899310}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 13fe8904d0ba1314685d0db4404bbbfc, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  frictionCoefficients:
+  - 0.01
+  - 0.15
+  - 0.05
+  - 0.001
+  particleWeights:
+  - 1
+  - 20
+  - 5
+  - 1
+  skidAngle:
+  - 10
+  - 30
+  - 20
+  - 0
+  particleColors:
+  - {r: 0.084905684, g: 0.0646519, b: 0.061276272, a: 1}
+  - {r: 0.17900379, g: 0.6981132, b: 0.1745283, a: 1}
+  - {r: 0.7216981, g: 0.9999999, b: 1, a: 1}
+  - {r: 0.43137258, g: 0.454902, b: 0.9058824, a: 1}
+--- !u!114 &1838596378137055678
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 9181517232826899310}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d44c74b93b997714fbd5a72128bc0f44, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  initialPoolCapacity: 100
+  maxPoolSize: 1000
+--- !u!114 &3939653344501799596
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 9181517232826899310}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d87bceb0caba2264a999e22cfb746ed5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  foliageLayer: {fileID: 11400000, guid: 770ed855487b0f94284b7843d92423e4, type: 2}
+  playerGameObjectValue: {fileID: 11400000, guid: 8649253a1cfe77e4cb34086fd9970ce6, type: 2}
+  chunkSize: {x: 256, y: 256}
 --- !u!1 &9181517233325800772
 GameObject:
   m_ObjectHideFlags: 0
@@ -109,7 +186,7 @@ Transform:
   m_Children:
   - {fileID: 9181517232826899311}
   m_Father: {fileID: 0}
-  m_RootOrder: 0
+  m_RootOrder: 10
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &9181517233325800773
 MonoBehaviour:

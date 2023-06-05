@@ -17,6 +17,7 @@ public class PlayerController : MonoBehaviour
 
     [Header("SOUP")]
     [SerializeField] private GameObjectValue playerGameObjectValue;
+    [SerializeField] private FloatValue currentSpeedValue;
 
     [Header("Camera")]
     [SerializeField] private Transform cameraFollowTarget;
@@ -265,6 +266,12 @@ public class PlayerController : MonoBehaviour
         }
 
         var currentPlanarVelocity = Vector3.ProjectOnPlane(velocity, surfacePlane);
+
+        // speed
+        if (currentSpeedValue != null && isGrounded)
+        {
+            currentSpeedValue.Value = currentPlanarVelocity.magnitude;
+        }
 
         // inputs
 

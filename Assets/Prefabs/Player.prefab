@@ -292,6 +292,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   playerGameObjectValue: {fileID: 11400000, guid: 8649253a1cfe77e4cb34086fd9970ce6, type: 2}
+  currentSpeedValue: {fileID: 11400000, guid: 521d20ed22ad57d4ea1904f2a246fbf2, type: 2}
   cameraFollowTarget: {fileID: 2730784486811953352}
   lookSensitivity: 2
   standingCameraDamping: 0.9
