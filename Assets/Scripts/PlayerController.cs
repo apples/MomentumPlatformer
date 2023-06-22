@@ -29,6 +29,7 @@ public class PlayerController : MonoBehaviour
 
     [Header("Physics")]
     [SerializeField] private LayerMask playerLayerMask;
+    [SerializeField] private LayerMask collideWithLayers;
     [SerializeField] private SphereCollider bodySphereCollider;
     [SerializeField] private SphereCollider headSphereCollider;
     [SerializeField] private float castMargin = 0.05f;
@@ -831,7 +832,7 @@ public class PlayerController : MonoBehaviour
     {
         var p1 = rotation * bodySphereCollider.center + position;
 
-        var didHit = Physics.SphereCast(p1, bodySphereCollider.radius - castMargin, direction, out hit, distance + castMargin, ~playerLayerMask.value, QueryTriggerInteraction.Ignore);
+        var didHit = Physics.SphereCast(p1, bodySphereCollider.radius - castMargin, direction, out hit, distance + castMargin, collideWithLayers.value, QueryTriggerInteraction.Ignore);
 
         if (didHit)
         {
@@ -845,7 +846,7 @@ public class PlayerController : MonoBehaviour
     {
         var p1 = rotation * bodySphereCollider.center + position;
 
-        results = Physics.OverlapSphere(p1, bodySphereCollider.radius, ~playerLayerMask.value, QueryTriggerInteraction.Ignore)
+        results = Physics.OverlapSphere(p1, bodySphereCollider.radius, collideWithLayers.value, QueryTriggerInteraction.Ignore)
             .Where(c => c.transform != transform)
             .ToArray();
 
