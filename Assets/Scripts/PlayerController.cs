@@ -395,9 +395,9 @@ public class PlayerController : MonoBehaviour
                     // gently redirect the velocity to match the board's forward direction
                     velocity = Quaternion.AngleAxis(snowAngle * carvingTurnFactor, surfacePlane) * velocity;
 
-                    skidEffect.SetFloat("SpawnRate", 5);
+                    skidEffect.SetFloat("SpawnRate", 10);
                     skidEffect.SetVector3("SpawnDirection", -currentPlanarVelocity.normalized);
-                    skidEffect.SetFloat("SpawnVelocity", currentPlanarVelocity.magnitude);
+                    skidEffect.SetFloat("SpawnVelocity", currentPlanarVelocity.magnitude * 2.5f);
                     skidEffect.SetVector4("Color", particleColor);
 
                     skidSfxRemainingDebounceTime -= Time.deltaTime;

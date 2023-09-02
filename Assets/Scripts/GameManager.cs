@@ -12,12 +12,15 @@ public class GameManager : MonoBehaviour
 
     public SOUP.FloatValue scoreTimeValue;
 
+    public Light sun;
+
     private bool stopTimer = false;
 
     private void Start()
     {
         torchTimer.Value = 10;
         scoreTimeValue.Value = 0;
+        enableTimerFlag.Value = 1;
     }
 
     private void LateUpdate()
@@ -34,6 +37,8 @@ public class GameManager : MonoBehaviour
                     stopTimer = true;
                     StartCoroutine(LoseCoroutine());
                 }
+
+                sun.transform.rotation = Quaternion.Euler(-10 + (torchTimer.Value * 5), 90, 0);
             }
 
             // Score
