@@ -15,7 +15,7 @@ public class PlayerCollider : MonoBehaviour
         if (other.gameObject.GetComponent<Brazier>() is Brazier brazier)
         {
             brazier.IsAlive = false;
-            torchTimer.Value = 10;
+            torchTimer.Value += 5;
         }
     }
 }
