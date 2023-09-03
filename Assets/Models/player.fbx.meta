@@ -1,7 +1,7 @@
 fileFormatVersion: 2
 guid: c67d2ff0a7ddead408fcad09b1337617
 ModelImporter:
-  serializedVersion: 22103
+  serializedVersion: 22200
   internalIDToNameTable:
   - first:
       74: 4826743432947276201
@@ -24,7 +24,12 @@ ModelImporter:
   - first:
       74: -4878802495883952931
     second: PlayerArmature|LeanRight
-  externalObjects: {}
+  externalObjects:
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Player
+    second: {fileID: 2100000, guid: 407463e5534b5134ea01cb3fca427a2e, type: 2}
   materials:
     materialImportMode: 2
     materialName: 0
@@ -264,6 +269,7 @@ ModelImporter:
     addColliders: 0
     useSRGBMaterialColor: 1
     sortHierarchyByName: 1
+    importPhysicalCameras: 1
     importVisibility: 1
     importBlendShapes: 1
     importCameras: 1
