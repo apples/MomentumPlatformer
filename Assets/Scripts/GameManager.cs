@@ -25,6 +25,11 @@ public class GameManager : MonoBehaviour
 
     private void LateUpdate()
     {
+        if (Input.GetKeyDown(KeyCode.Keypad7))
+        {
+            stopTimer = !stopTimer;
+        }
+        
         if (!stopTimer)
         {
             // Torch
