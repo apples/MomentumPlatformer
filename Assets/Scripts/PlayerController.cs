@@ -56,7 +56,7 @@ public class PlayerController : MonoBehaviour
     [Header("Board")]
     [SerializeField] private GameObject board;
     [SerializeField] private VisualEffect skidEffect;
-    [SerializeField] private float skidEffectSpawnFactor = 1f;
+    [SerializeField] private float skidEffectSpawnFactor = 1.5f;
     [SerializeField] private VisualEffect boostEffect;
 
     [Header("Animation")]
@@ -78,6 +78,10 @@ public class PlayerController : MonoBehaviour
     [SerializeField] private float skidSfxMinSpeed = 1f;
     [SerializeField] private float skidSfxMaxSpeed = 100f;
     [SerializeField] private float skidSfxDebounceTime = 0.1f;
+
+    [Header("Avalanche Audio")]
+    [SerializeField] private AudioSource avalancheSfx;
+    [SerializeField] private Transform avalanche;
 
     [Header("Ragdoll")]
     [SerializeField] private SimpleRagdoll ragdoll;
@@ -165,6 +169,10 @@ public class PlayerController : MonoBehaviour
         onPause.Raise();
         boardSfx.volume = 0f;
         boardSfxTargetVolume = 0f;
+        if (avalancheSfx)
+        {
+            avalancheSfx.volume = 0f;
+        }
     }
 
     private void LoadState(InputAction.CallbackContext obj)
@@ -395,9 +403,9 @@ public class PlayerController : MonoBehaviour
                     // gently redirect the velocity to match the board's forward direction
                     velocity = Quaternion.AngleAxis(snowAngle * carvingTurnFactor, surfacePlane) * velocity;
 
-                    skidEffect.SetFloat("SpawnRate", 10);
+                    skidEffect.SetFloat("SpawnRate", 15);
                     skidEffect.SetVector3("SpawnDirection", -currentPlanarVelocity.normalized);
-                    skidEffect.SetFloat("SpawnVelocity", currentPlanarVelocity.magnitude * 2.5f);
+                    skidEffect.SetFloat("SpawnVelocity", currentPlanarVelocity.magnitude * 2.0f);
                     skidEffect.SetVector4("Color", particleColor);
 
                     skidSfxRemainingDebounceTime -= Time.deltaTime;
@@ -418,7 +426,7 @@ public class PlayerController : MonoBehaviour
 
                     skidEffect.SetFloat("SpawnRate", snowForce.magnitude * skidEffectSpawnFactor);
                     skidEffect.SetVector3("SpawnDirection", Vector3.Reflect(-currentPlanarVelocity.normalized, boardRight));
-                    skidEffect.SetFloat("SpawnVelocity", currentPlanarVelocity.magnitude);
+                    skidEffect.SetFloat("SpawnVelocity", currentPlanarVelocity.magnitude * 1.0f);
                     skidEffect.SetVector4("Color", particleColor);
 
                     var mag = Vector3.Project(currentPlanarVelocity, boardRight).magnitude;
@@ -520,6 +528,11 @@ public class PlayerController : MonoBehaviour
         // audio
 
         boardSfx.volume = Mathf.MoveTowards(boardSfx.volume, boardSfxTargetVolume, Time.deltaTime * boardSfxVolumeSpeed);
+
+        if (avalancheSfx)
+        {
+            avalancheSfx.volume = (float)Math.Clamp(3 - Math.Log(Math.Abs((avalanche.position.x - 100) - rigidbody.position.x), 6), 0, 1);
+        }
     }
 
     private void StopRagdoll()
@@ -532,7 +545,7 @@ public class PlayerController : MonoBehaviour
         rigidbody.rotation = rotation;
     }
 
-    private void StartRagdoll(bool permanent = false)
+    public void StartRagdoll(bool permanent = false)
     {
         if (ragdoll.IsRagdolling)
         {

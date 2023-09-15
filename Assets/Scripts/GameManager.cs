@@ -16,11 +16,13 @@ public class GameManager : MonoBehaviour
 
     private bool stopTimer = false;
 
+    public bool withCountdown = true;
+
     private void Start()
     {
         torchTimer.Value = 10;
         scoreTimeValue.Value = 0;
-        enableTimerFlag.Value = 1;
+        enableTimerFlag.Value = withCountdown ? 1 : 0;
     }
 
     private void LateUpdate()
@@ -39,8 +41,7 @@ public class GameManager : MonoBehaviour
 
                 if (torchTimer.Value == 0)
                 {
-                    stopTimer = true;
-                    StartCoroutine(LoseCoroutine());
+                    Lose();
                 }
 
                 sun.transform.rotation = Quaternion.Euler(-10 + (torchTimer.Value * 5), 90, 0);
@@ -55,6 +56,12 @@ public class GameManager : MonoBehaviour
     {
         stopTimer = true;
         StartCoroutine(WinCoroutine());
+    }
+
+    public void Lose()
+    {
+        stopTimer = true;
+        StartCoroutine(LoseCoroutine());
     }
 
     private IEnumerator WinCoroutine()
