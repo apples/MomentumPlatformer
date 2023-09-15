@@ -1399,6 +1399,7 @@ MonoBehaviour:
   curtain: {fileID: 147463184}
   particles: {fileID: 756999497}
   feet: {fileID: 78179405}
+  player: {fileID: 707360328}
 --- !u!4 &306534854
 Transform:
   m_ObjectHideFlags: 0
@@ -3038,6 +3039,11 @@ MonoBehaviour:
           m_StringArgument: 
           m_BoolArgument: 1
         m_CallState: 2
+--- !u!4 &707360328 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 6653758533952557382, guid: 860d06fe789a208448a4d2401e23b280, type: 3}
+  m_PrefabInstance: {fileID: 6653758535206801670}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1 &756999497
 GameObject:
   m_ObjectHideFlags: 0

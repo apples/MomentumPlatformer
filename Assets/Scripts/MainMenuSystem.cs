@@ -92,6 +92,12 @@ public class MainMenuSystem : MonoBehaviour
         UnityEngine.SceneManagement.SceneManager.LoadScene("GameplayScene");
     }
 
+    public void PlayGameAvalanche()
+    {
+        enableTimerFlag.Value = 0;
+        UnityEngine.SceneManagement.SceneManager.LoadScene("AvalanchGameplayScene");
+    }
+
     public static Quaternion SmoothDampQ(Quaternion rot, Quaternion target, ref Quaternion deriv, float time)
     {
         if (Time.deltaTime < Mathf.Epsilon) return rot;

@@ -14,6 +14,8 @@ public class AvalancheScript : MonoBehaviour
     public GameObject feet;
     private List<Transform> spheres;
 
+    public Transform player;
+
     // Start is called before the first frame update
     void Start()
     {
@@ -31,7 +33,7 @@ public class AvalancheScript : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        this.transform.position += new Vector3(Time.deltaTime * -avalancheSpeed, 0, 0);
+        this.transform.position += new Vector3(Time.deltaTime * -avalancheSpeed * (1 + ((curtain.transform.position.x - player.position.x) / 1000)), 0, 0);
 
         float rando;
         RaycastHit hit;
