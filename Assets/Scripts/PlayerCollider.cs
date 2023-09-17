@@ -9,6 +9,7 @@ using UnityEngine.InputSystem;
 public class PlayerCollider : MonoBehaviour
 {
     [SerializeField] private SOUP.FloatValue torchTimer;
+    [SerializeField] private SOUP.Event onLose;
 
     private void OnTriggerEnter(Collider other)
     {
@@ -16,6 +17,10 @@ public class PlayerCollider : MonoBehaviour
         {
             brazier.IsAlive = false;
             torchTimer.Value += 5;
+        }
+        else if (other.gameObject.CompareTag("Avalanche"))
+        {
+            onLose.Raise();
         }
     }
 }

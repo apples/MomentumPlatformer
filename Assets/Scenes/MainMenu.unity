@@ -2096,7 +2096,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: Coin Collection?
+  m_text: Avalanche Survival
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 518d99b31b668c04d9c8898cdb08d147, type: 2}
   m_sharedMaterial: {fileID: 4057819297454982817, guid: 518d99b31b668c04d9c8898cdb08d147, type: 2}
@@ -4646,7 +4646,7 @@ GameObject:
   - component: {fileID: 1441419541}
   - component: {fileID: 1441419540}
   m_Layer: 5
-  m_Name: CoinsButton
+  m_Name: AvalancheButton
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -4719,7 +4719,7 @@ MonoBehaviour:
       m_Calls:
       - m_Target: {fileID: 1333680689}
         m_TargetAssemblyTypeName: MainMenuSystem, Assembly-CSharp
-        m_MethodName: PlayGameNoTimer
+        m_MethodName: PlayGameAvalanche
         m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
