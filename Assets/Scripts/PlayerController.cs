@@ -374,13 +374,19 @@ public class PlayerController : MonoBehaviour
 
                 if (groundTerrain != null)
                 {
-                    var localPosition = groundTerrain.transform.worldToLocalMatrix * groundPosition;
+                    var localPosition = groundTerrain.transform.InverseTransformPoint(groundPosition);
                     var localPosition2d = new Vector2(localPosition.x, localPosition.z);
                     var alphamapSize = new Vector2Int(groundTerrain.terrainData.alphamapWidth, groundTerrain.terrainData.alphamapHeight);
-                    var uv = localPosition2d * alphamapSize / groundTerrain.terrainData.size;
+                    var uv = localPosition2d / groundTerrain.terrainData.size * alphamapSize;
                     var count = groundTerrain.terrainData.alphamapLayers;
 
                     var pixel = groundTerrain.terrainData.GetAlphamaps((int)uv.x, (int)uv.y, 1, 1);
+
+                    Debug.Log(groundPosition);
+                    Debug.Log(groundTerrain.transform);
+                    Debug.Log(localPosition2d);
+                    Debug.Log($"{uv.x}, {uv.y}");
+                    Debug.Log($"{pixel[0, 0, 0]},{pixel[0, 0, 1]},{pixel[0, 0, 2]},{pixel[0, 0, 3]}");
 
                     surfaceFriction = 0f;
                     slideSkidAngle = 0f;

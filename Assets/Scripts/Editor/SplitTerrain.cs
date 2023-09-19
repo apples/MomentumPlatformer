@@ -11,6 +11,7 @@ public class SplitTerrain : EditorWindow
     public int chunkZ = 1;
 
     public int newRes = 1024;
+    public int newAlphamapRes = 1024;
 
     public string newName;
 
@@ -23,11 +24,12 @@ public class SplitTerrain : EditorWindow
     void OnGUI()
     {
         GUILayout.Label("Split Terrain", EditorStyles.boldLabel);
-        terrain = (GameObject)EditorGUILayout.ObjectField("Terrain", terrain, typeof(GameObject), true);
-        chunkX = EditorGUILayout.IntField("Chunk X", chunkX);
-        chunkZ = EditorGUILayout.IntField("Chunk Z", chunkZ);
-        newRes = EditorGUILayout.IntField("New Resolution", newRes);
-        newName = EditorGUILayout.TextField("New Name", newName);
+        terrain = (GameObject)EditorGUILayout.ObjectField("Terrain GameObject", terrain, typeof(GameObject), true);
+        chunkX = EditorGUILayout.IntField("Chunk Count X", chunkX);
+        chunkZ = EditorGUILayout.IntField("Chunk Count Z", chunkZ);
+        newRes = EditorGUILayout.IntField("New Heightmap Resolution", newRes);
+        newAlphamapRes = EditorGUILayout.IntField("New Alphamap Resolution", newAlphamapRes);
+        newName = EditorGUILayout.TextField("New Folder Name", newName);
 
         if (GUILayout.Button("Split"))
         {
@@ -47,16 +49,24 @@ public class SplitTerrain : EditorWindow
 
         int res = terrainData.heightmapResolution;
         float[,] heights = terrainData.GetHeights(0, 0, res, res);
+        int ares = terrainData.alphamapResolution;
+        float[,,] alphamaps = terrainData.GetAlphamaps(0, 0, ares, ares);
 
         float[,] newHeights = new float[newRes, newRes];
+        float[,,] newAlphamaps = new float[newAlphamapRes, newAlphamapRes, 4];
 
-        int chunkSizeX = res / chunkX;
-        int chunkSizeZ = res / chunkZ;
+        int chunkHeightmapSizeX = (res - 1) / chunkX;
+        int chunkHeightmapSizeZ = (res - 1) / chunkZ;
+
+        int chunkAlphamapSizeX = (ares - 1) / chunkX;
+        int chunkAlphamapSizeZ = (ares - 1) / chunkZ;
 
         Debug.Log("Total trees = " + terrainData.treeInstanceCount);
         Debug.Log("Resolution = " + res);
 
         TerrainData[,] newTerrainData = new TerrainData[chunkX, chunkZ];
+
+        AssetDatabase.CreateFolder("Assets/Terrain", newName);
 
         for (int x = 0; x < chunkX; x++)
         {
@@ -64,14 +74,19 @@ public class SplitTerrain : EditorWindow
             {
                 var newTerrain = Instantiate(terrain, new Vector3(terrain.transform.position.x + x * terrainData.size.x / chunkX, 0, terrain.transform.position.z + z * terrainData.size.z / chunkZ), Quaternion.identity);
                 newTerrain.name = "Terrain " + x + " " + z;
-                newTerrain.GetComponent<Terrain>().terrainData = new TerrainData();
-                newTerrain.GetComponent<Terrain>().terrainData.treePrototypes = terrainData.treePrototypes;
-                newTerrain.GetComponent<Terrain>().terrainData.RefreshPrototypes();
-                newTerrain.GetComponent<Terrain>().terrainData.heightmapResolution = newRes;
+                var newTerrainCom = newTerrain.GetComponent<Terrain>();
+                newTerrainCom.terrainData = new TerrainData();
+                newTerrainCom.terrainData.treePrototypes = terrainData.treePrototypes;
+                newTerrainCom.terrainData.RefreshPrototypes();
+                newTerrainCom.terrainData.heightmapResolution = newRes;
+                newTerrainCom.terrainData.alphamapResolution = newAlphamapRes;
+                newTerrainCom.terrainData.SetTerrainLayersRegisterUndo(terrainData.terrainLayers, "asdf");
 
                 newTerrainData[x, z] = newTerrain.GetComponent<Terrain>().terrainData;
 
-                AssetDatabase.CreateAsset(newTerrain.GetComponent<Terrain>().terrainData, $"Assets/Terrain/TerrainData_{newName}_{x}_{z}.asset");
+                newTerrain.GetComponent<TerrainCollider>().terrainData = newTerrainCom.terrainData;
+
+                AssetDatabase.CreateAsset(newTerrain.GetComponent<Terrain>().terrainData, $"Assets/Terrain/{newName}/TerrainData_{x}_{z}.asset");
             }
         }
 
@@ -105,45 +120,88 @@ public class SplitTerrain : EditorWindow
             {
                 float min = 999;
                 float max = 0;
+
+                // heightmap slice
+                float chunkXorigin = chunkHeightmapSizeX * x;
+                float chunkZorigin = chunkHeightmapSizeZ * z;
+
                 for (int i = 0; i < newRes; i++)
                 {
                     for (int j = 0; j < newRes; j++)
                     {
-                        if (newRes > chunkX || newRes > chunkZ)
+                        float sx = chunkXorigin + ((float)i / (float)(newRes - 1)) * (float)chunkHeightmapSizeX;
+                        float sz = chunkZorigin + ((float)j / (float)(newRes - 1)) * (float)chunkHeightmapSizeZ;
+
+                        var wx = sx - (float)Math.Truncate(sx);
+                        var wz = sz - (float)Math.Truncate(sz);
+
+                        if (sz < res - 1 && sx < res - 1)
                         {
                             // a--b
                             // |  |
                             // c--d
-                            var a = heights[Mathf.Clamp(z * chunkSizeZ + j * chunkSizeZ / newRes, 0, heights.GetLength(0)-1), Mathf.Clamp(x * chunkSizeX + i * chunkSizeX / newRes, 0, heights.GetLength(1)-1)];
-                            var b = heights[Mathf.Clamp(z * chunkSizeZ + j * chunkSizeZ / newRes, 0, heights.GetLength(0)-1), Mathf.Clamp(x * chunkSizeX + i * chunkSizeX / newRes + 1, 0, heights.GetLength(1)-1)];
-                            var c = heights[Mathf.Clamp(z * chunkSizeZ + j * chunkSizeZ / newRes + 1, 0, heights.GetLength(0)-1), Mathf.Clamp(x * chunkSizeX + i * chunkSizeX / newRes, 0, heights.GetLength(1)-1)];
-                            var d = heights[Mathf.Clamp(z * chunkSizeZ + j * chunkSizeZ / newRes + 1, 0, heights.GetLength(0)-1), Mathf.Clamp(x * chunkSizeX + i * chunkSizeX / newRes + 1, 0, heights.GetLength(1)-1)];
+                            var a = heights[(int)sz, (int)sx];
+                            var b = heights[(int)sz, (int)sx + 1];
+                            var c = heights[(int)sz + 1, (int)sx];
+                            var d = heights[(int)sz + 1, (int)sx + 1];
 
-                            float W(float w) => (float)(w - (int)(w));
-
-                            var w_x = W(i * chunkSizeX / (float)newRes);
-                            var w_y = W(j * chunkSizeZ / (float)newRes);
-
-                            newHeights[j, i] = Mathf.Lerp(Mathf.Lerp(a, b, w_x), Mathf.Lerp(c, d, w_x), w_y);
+                            newHeights[j, i] = Mathf.Lerp(Mathf.Lerp(a, b, wx), Mathf.Lerp(c, d, wx), wz);
                         }
                         else
                         {
-                            newHeights[j, i] = heights[z * chunkSizeZ + j * chunkSizeZ / newRes, x * chunkSizeX + i * chunkSizeX / newRes];
+                            newHeights[j, i] = heights[(int)sz, (int)sx];
                         }
 
                         if (newHeights[j, i] < min) {
-                                min = newHeights[j, i];
-                            }
-                            if (newHeights[j, i] > max) {
-                                max = newHeights[j, i];
-                            }
+                            min = newHeights[j, i];
+                        }
+                        if (newHeights[j, i] > max) {
+                            max = newHeights[j, i];
+                        }
                     }
                 }
                 Debug.Log($"Min ({x},{z}) = {min}");
                 Debug.Log($"Max ({x},{z}) = {max}");
 
+                // alphamap slice
+                float chunkXAorigin = chunkAlphamapSizeX * x;
+                float chunkZAorigin = chunkAlphamapSizeZ * z;
+
+                for (int i = 0; i < newAlphamapRes; i++)
+                {
+                    for (int j = 0; j < newAlphamapRes; j++)
+                    {
+                        float sx = chunkXAorigin + ((float)i / (float)(newAlphamapRes - 1)) * (float)chunkAlphamapSizeX;
+                        float sz = chunkZAorigin + ((float)j / (float)(newAlphamapRes - 1)) * (float)chunkAlphamapSizeZ;
+
+                        var wx = sx - (float)Math.Truncate(sx);
+                        var wz = sz - (float)Math.Truncate(sz);
+
+                        for (int k = 0; k < 4; k++)
+                        {
+                            if (sz < ares - 1 && sx < ares - 1)
+                            {
+                                // a--b
+                                // |  |
+                                // c--d
+                                var a = alphamaps[(int)sz, (int)sx, k];
+                                var b = alphamaps[(int)sz, (int)sx + 1, k];
+                                var c = alphamaps[(int)sz + 1, (int)sx, k];
+                                var d = alphamaps[(int)sz + 1, (int)sx + 1, k];
+
+                                newAlphamaps[j, i, k] = Mathf.Lerp(Mathf.Lerp(a, b, wx), Mathf.Lerp(c, d, wx), wz);
+                            }
+                            else
+                            {
+                                newAlphamaps[j, i, k] = alphamaps[(int)sz, (int)sx, k];
+                            }
+                        }
+                    }
+                }
+
                 newTerrainData[x, z].size = new Vector3(terrainData.size.x / chunkX, terrainData.size.y, terrainData.size.z / chunkZ);
                 newTerrainData[x, z].SetHeights(0, 0, newHeights);
+                newTerrainData[x, z].SetAlphamaps(0, 0, newAlphamaps);
                 newTerrainData[x, z].SetTreeInstances(newTrees[x, z].ToArray(), true);
             }
         }
