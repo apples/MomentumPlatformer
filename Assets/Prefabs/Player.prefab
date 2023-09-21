@@ -344,6 +344,8 @@ MonoBehaviour:
   skidSfxMinSpeed: 50
   skidSfxMaxSpeed: 200
   skidSfxDebounceTime: 0.1
+  avalancheSfx: {fileID: 0}
+  avalanche: {fileID: 0}
   ragdoll: {fileID: 7637243161099965369}
   ragdollTime: 1
   ragdollVCam: {fileID: 2902785393843965211}
@@ -351,8 +353,9 @@ MonoBehaviour:
   startVelocity: {x: -30, y: 0, z: 0}
   startRotation: {x: 0, y: 0.70710677, z: 0, w: -0.70710677}
   trickBoostImpulse: 30
-  trickYawThreshold: 100
-  trickPitchThreshold: 100
+  trickYawThreshold: 147
+  trickPitchThreshold: 147
+  boardShader: {fileID: 383413690760040505}
 --- !u!54 &6653758533952557380
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -393,6 +396,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   torchTimer: {fileID: 11400000, guid: 00b226401a0697d4fa5f3f71b5d6e20b, type: 2}
+  onLose: {fileID: 0}
 --- !u!114 &7695933734582377422
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1065,6 +1069,11 @@ PrefabInstance:
       insertIndex: -1
       addedObject: {fileID: 367885317019541156}
   m_SourcePrefab: {fileID: 100100000, guid: 593e89ec82ba2434f9e30ae597a6af94, type: 3}
+--- !u!23 &383413690760040505 stripped
+MeshRenderer:
+  m_CorrespondingSourceObject: {fileID: -7511558181221131132, guid: 593e89ec82ba2434f9e30ae597a6af94, type: 3}
+  m_PrefabInstance: {fileID: 1338621432374267069}
+  m_PrefabAsset: {fileID: 0}
 --- !u!4 &1520251180177550166 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: 593e89ec82ba2434f9e30ae597a6af94, type: 3}

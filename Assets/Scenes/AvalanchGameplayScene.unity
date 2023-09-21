@@ -11957,6 +11957,10 @@ PrefabInstance:
       value: 
       objectReference: {fileID: 147463188}
     - target: {fileID: 6653758533952557381, guid: 860d06fe789a208448a4d2401e23b280, type: 3}
+      propertyPath: boardShader
+      value: 
+      objectReference: {fileID: 6653758535206801671}
+    - target: {fileID: 6653758533952557381, guid: 860d06fe789a208448a4d2401e23b280, type: 3}
       propertyPath: avalancheSfx
       value: 
       objectReference: {fileID: 306534855}
@@ -12056,6 +12060,11 @@ PrefabInstance:
       insertIndex: -1
       addedObject: {fileID: 707360323}
   m_SourcePrefab: {fileID: 100100000, guid: 860d06fe789a208448a4d2401e23b280, type: 3}
+--- !u!23 &6653758535206801671 stripped
+MeshRenderer:
+  m_CorrespondingSourceObject: {fileID: 383413690760040505, guid: 860d06fe789a208448a4d2401e23b280, type: 3}
+  m_PrefabInstance: {fileID: 6653758535206801670}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1001 &8507078675035021287
 PrefabInstance:
   m_ObjectHideFlags: 0

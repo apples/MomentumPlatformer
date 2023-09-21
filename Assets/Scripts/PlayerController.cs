@@ -95,8 +95,9 @@ public class PlayerController : MonoBehaviour
 
     [Header("Trick")]
     [SerializeField] private float trickBoostImpulse = 30f;
-    [SerializeField] private float trickYawThreshold = 100f;
-    [SerializeField] private float trickPitchThreshold = 100f;
+    [SerializeField] private float trickYawThreshold = 147f;
+    [SerializeField] private float trickPitchThreshold = 147f;
+    [SerializeField] private Renderer boardShader;
 
     private new Rigidbody rigidbody;
 
@@ -127,7 +128,7 @@ public class PlayerController : MonoBehaviour
 
     private float ragdollTimer = 0f;
 
-    private bool hasTrick = false;
+    private float trickCharges = 0;
     private bool doingTrick = false;
     private float trickYaw;
     private float trickPitch;
@@ -337,7 +338,7 @@ public class PlayerController : MonoBehaviour
                 rotation = Quaternion.LookRotation(velocityDirection, surfacePlane);
             }
 
-            hasTrick = false;
+            trickCharges = 0;
             doingTrick = false;
         }
 
@@ -382,11 +383,11 @@ public class PlayerController : MonoBehaviour
 
                     var pixel = groundTerrain.terrainData.GetAlphamaps((int)uv.x, (int)uv.y, 1, 1);
 
-                    Debug.Log(groundPosition);
-                    Debug.Log(groundTerrain.transform);
-                    Debug.Log(localPosition2d);
-                    Debug.Log($"{uv.x}, {uv.y}");
-                    Debug.Log($"{pixel[0, 0, 0]},{pixel[0, 0, 1]},{pixel[0, 0, 2]},{pixel[0, 0, 3]}");
+                    //Debug.Log(groundPosition);
+                    //Debug.Log(groundTerrain.transform);
+                    //Debug.Log(localPosition2d);
+                    //Debug.Log($"{uv.x}, {uv.y}");
+                    //Debug.Log($"{pixel[0, 0, 0]},{pixel[0, 0, 1]},{pixel[0, 0, 2]},{pixel[0, 0, 3]}");
 
                     surfaceFriction = 0f;
                     slideSkidAngle = 0f;
@@ -447,12 +448,12 @@ public class PlayerController : MonoBehaviour
                 velocity += friction * Time.deltaTime;
 
                 // consume trick
-                if (hasTrick)
+                if (trickCharges > 0)
                 {
-                    hasTrick = false;
-                    velocity += boardForward * trickBoostImpulse;
+                    velocity += boardForward * ((trickBoostImpulse * trickCharges) + ((trickBoostImpulse / 2) * (trickCharges - 1)));
+                    trickCharges = 0;
                     boostEffect.Play();
-                    Debug.Log("Boost");
+                    boardShader.material.color = Color.HSVToRGB(176 / 360.0f, 1, .75f) * 2.7f;
                 }
 
                 doingTrick = false;
@@ -477,9 +478,17 @@ public class PlayerController : MonoBehaviour
                 trickYaw += steeringAngularAcceleration;
                 trickPitch += spinAngularAcceleration;
 
-                if (Mathf.Abs(trickYaw) > trickYawThreshold || Mathf.Abs(trickPitch) > trickPitchThreshold)
+                if (Mathf.Abs(trickYaw) > trickYawThreshold)
                 {
-                    hasTrick = true;
+                    trickCharges++;
+                    trickYaw = 0;
+                    boardShader.material.color = Color.HSVToRGB((176 + (40 * trickCharges)) / 360.0f, 1, .75f) * 2.7f;
+                }
+                if(Mathf.Abs(trickPitch) > trickPitchThreshold)
+                {
+                    trickCharges++;
+                    trickPitch = 0;
+                    boardShader.material.color = Color.HSVToRGB((176 + (40 * trickCharges)) / 360.0f, 1, .75f) * 2.7f;
                 }
             }
 
