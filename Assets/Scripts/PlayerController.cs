@@ -378,16 +378,18 @@ public class PlayerController : MonoBehaviour
                     var localPosition = groundTerrain.transform.InverseTransformPoint(groundPosition);
                     var localPosition2d = new Vector2(localPosition.x, localPosition.z);
                     var alphamapSize = new Vector2Int(groundTerrain.terrainData.alphamapWidth, groundTerrain.terrainData.alphamapHeight);
-                    var uv = localPosition2d / groundTerrain.terrainData.size * alphamapSize;
+                    var uv = localPosition2d / new Vector2(groundTerrain.terrainData.size.x, groundTerrain.terrainData.size.z) * alphamapSize;
                     var count = groundTerrain.terrainData.alphamapLayers;
 
                     var pixel = groundTerrain.terrainData.GetAlphamaps((int)uv.x, (int)uv.y, 1, 1);
 
-                    //Debug.Log(groundPosition);
-                    //Debug.Log(groundTerrain.transform);
-                    //Debug.Log(localPosition2d);
-                    //Debug.Log($"{uv.x}, {uv.y}");
-                    //Debug.Log($"{pixel[0, 0, 0]},{pixel[0, 0, 1]},{pixel[0, 0, 2]},{pixel[0, 0, 3]}");
+                    // Debug.Log(groundTerrain.transform);
+                    // Debug.Log(groundPosition);
+                    // Debug.Log(localPosition2d);
+                    // Debug.Log($"{groundTerrain.terrainData.size}");
+                    // Debug.Log($"{groundTerrain.terrainData.alphamapWidth}, {groundTerrain.terrainData.alphamapHeight}");
+                    // Debug.Log($"{uv.x}, {uv.y}");
+                    // Debug.Log($"{pixel[0, 0, 0]},{pixel[0, 0, 1]},{pixel[0, 0, 2]},{pixel[0, 0, 3]}");
 
                     surfaceFriction = 0f;
                     slideSkidAngle = 0f;
