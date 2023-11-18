@@ -27,7 +27,7 @@ public class SpeedDisplayController : MonoBehaviour
 
     void Update()
     {
-        var value = (int)(currentSpeed.Value * 3.6f); // km/h
+        var value = (int)(currentSpeed.Value * 3.6f); // km/h // not actually km/h apparently
 
         tmpUgui.text = value.ToString() + " km/h";
 

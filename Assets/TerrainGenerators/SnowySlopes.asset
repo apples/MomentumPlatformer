@@ -1,0 +1,38 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b53aaa2f58f9d064ca0ceff325328b09, type: 3}
+  m_Name: SnowySlopes
+  m_EditorClassIdentifier: 
+  numChunks: 8
+  chunkResolution: 513
+  chunkSize: {x: 1024, y: 1024}
+  slopeGrade: 12
+  noiseType: 0
+  noiseHeight: 20
+  noiseScale: {x: 250, y: 60}
+  gutterGuardDistance: 0.1
+  treeNoiseType: 2
+  treeNoiseScale: {x: 500, y: 300}
+  treeNoiseMin: 0.1
+  treeNoiseMax: 0.5
+  sigilSpacing: 100
+  terrainName: SnowySlopes
+  originRange: 800
+  terrainTreeDrawDistance: 1000
+  baseLayer: {fileID: 8574412962073106934, guid: 09580187f8e272e4e8e3179cb63af2e3, type: 2}
+  seed: 4042078430
+  terrainLayers:
+  - {fileID: 8574412962073106934, guid: 872395e10cb0d984286c73b8dd63793e, type: 2}
+  - {fileID: 8574412962073106934, guid: f910952a4083662469f19829e7c57aea, type: 2}
+  - {fileID: 8574412962073106934, guid: fc7fa8e7078696342a94a23932af2b5f, type: 2}
+  sigilPrefab: {fileID: 8173067174147102333, guid: a124cfd154f7b91418adc46fe0ddcde8, type: 3}
+  foliage: []

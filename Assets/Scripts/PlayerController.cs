@@ -98,6 +98,7 @@ public class PlayerController : MonoBehaviour
     [SerializeField] private float trickYawThreshold = 147f;
     [SerializeField] private float trickPitchThreshold = 147f;
     [SerializeField] private Renderer boardShader;
+    [SerializeField] private ScoreController scoreScript;
 
     private new Rigidbody rigidbody;
 
@@ -128,10 +129,14 @@ public class PlayerController : MonoBehaviour
 
     private float ragdollTimer = 0f;
 
-    private float trickCharges = 0;
+    private float spinTrickCharges = 0;
+    private float flipTrickCharges = 0;
+    private bool isFlipForward = false;
     private bool doingTrick = false;
     private float trickYaw;
     private float trickPitch;
+    private float airTimer = 0f;
+    private int boardIntensityPropertyId;
 
     private Quaternion boardFlatRotation;
 
@@ -163,6 +168,8 @@ public class PlayerController : MonoBehaviour
         controls.Player.SaveState.performed += SaveState;
         controls.Player.LoadState.performed += LoadState;
         controls.Player.Pause.performed += Pause;
+
+        boardIntensityPropertyId = Shader.PropertyToID("_Intensity");
     }
 
     private void Pause(InputAction.CallbackContext obj)
@@ -243,7 +250,7 @@ public class PlayerController : MonoBehaviour
 
     private void Start()
     {
-        velocity = Vector3.zero;
+        velocity = new Vector3(1, 0, 0);//Vector3.zero;
         rotation = rigidbody.rotation;
         cameraRotation = cameraFollowTarget.rotation;
         ragdollVCam.Priority = 0;
@@ -338,7 +345,8 @@ public class PlayerController : MonoBehaviour
                 rotation = Quaternion.LookRotation(velocityDirection, surfacePlane);
             }
 
-            trickCharges = 0;
+            spinTrickCharges = 0;
+            flipTrickCharges = 0;
             doingTrick = false;
         }
 
@@ -450,15 +458,38 @@ public class PlayerController : MonoBehaviour
                 velocity += friction * Time.deltaTime;
 
                 // consume trick
-                if (trickCharges > 0)
+                if (spinTrickCharges > 0)
                 {
-                    velocity += boardForward * ((trickBoostImpulse * trickCharges) + ((trickBoostImpulse / 2) * (trickCharges - 1)));
-                    trickCharges = 0;
+                    if (scoreScript)
+                    {
+                        scoreScript.AddScore((180 * spinTrickCharges) + "° Spin", 250 * (int)spinTrickCharges * (1 + ((int)spinTrickCharges - 1) / 2));
+                    }
+                    velocity += boardForward * ((trickBoostImpulse * spinTrickCharges) + ((trickBoostImpulse / 2) * (spinTrickCharges - 1)));
+                    spinTrickCharges = 0;
                     boostEffect.Play();
                     boardShader.material.color = Color.HSVToRGB(176 / 360.0f, 1, .75f) * 2.7f;
                 }
+                if (flipTrickCharges > 0)
+                {
+                    if (scoreScript)
+                    {
+                        scoreScript.AddScore((flipTrickCharges <= 2 ? "" : flipTrickCharges <= 4 ? "Double " : flipTrickCharges <= 6 ? "Triple " : flipTrickCharges <= 8 ? "Quad " : "Multi ") + 
+                            (isFlipForward ? "Front Flip" : "Backflip"),
+                            300 * (int)flipTrickCharges * (1 + ((int)flipTrickCharges - 1) / 2));
+                    }
+                    velocity += boardForward * ((trickBoostImpulse * 1.1f * flipTrickCharges) + ((trickBoostImpulse / 2) * (flipTrickCharges - 1)));
+                    flipTrickCharges = 0;
+                    boostEffect.Play();
+                    boardShader.material.color = Color.HSVToRGB(176 / 360.0f, 1, .75f) * 2.7f;
+                }
+                if(airTimer > 2.0f)
+                {
+                    scoreScript.AddScore("Hang Time Bonus", (int)(250 * airTimer));
+                    boardShader.material.SetFloat(boardIntensityPropertyId, 1);
+                }
 
                 doingTrick = false;
+                airTimer = 0;
             }
             else
             {
@@ -482,16 +513,20 @@ public class PlayerController : MonoBehaviour
 
                 if (Mathf.Abs(trickYaw) > trickYawThreshold)
                 {
-                    trickCharges++;
+                    spinTrickCharges++;
                     trickYaw = 0;
-                    boardShader.material.color = Color.HSVToRGB((176 + (40 * trickCharges)) / 360.0f, 1, .75f) * 2.7f;
+                    boardShader.material.color = Color.HSVToRGB((176 + (40 * spinTrickCharges)) / 360.0f, 1, .75f) * 2.7f;
                 }
                 if(Mathf.Abs(trickPitch) > trickPitchThreshold)
                 {
-                    trickCharges++;
+                    flipTrickCharges++;
+                    isFlipForward = trickPitch > 0;
                     trickPitch = 0;
-                    boardShader.material.color = Color.HSVToRGB((176 + (40 * trickCharges)) / 360.0f, 1, .75f) * 2.7f;
+                    boardShader.material.color = Color.HSVToRGB((176 + (40 * flipTrickCharges)) / 360.0f, 1, .75f) * 2.7f;
                 }
+
+                airTimer += Time.deltaTime;
+                boardShader.material.SetFloat(boardIntensityPropertyId, 1 + (airTimer * 1f));
             }
 
         }

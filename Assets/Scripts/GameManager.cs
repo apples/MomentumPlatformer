@@ -55,12 +55,14 @@ public class GameManager : MonoBehaviour
     public void Win()
     {
         stopTimer = true;
+        scoreTimeValue.Value = 0;
         StartCoroutine(WinCoroutine());
     }
 
     public void Lose()
     {
         stopTimer = true;
+        scoreTimeValue.Value = 0;
         StartCoroutine(LoseCoroutine());
     }
 

@@ -21,9 +21,7 @@ public class AvalancheScript : MonoBehaviour
     {
         spheres = feet.GetComponentsInChildren<Transform>().ToList();
         spheres.RemoveAt(0);
-        //curtain = spheres.ElementAt(0);
 
-        //float rando;
         foreach (var sphere in spheres)
         {
             sphere.rotation = Quaternion.Euler(Random.value * 360, Random.value * 360, Random.value * 360); 
@@ -55,12 +53,7 @@ public class AvalancheScript : MonoBehaviour
             sphere.rotation *= Quaternion.Euler(0, 0, Time.deltaTime * avalancheSpeed * sphereSpinSpeed);
         }
 
-        //print(spheres.ElementAt(0).position);
         curtain.transform.position = new Vector3(curtain.transform.position.x, spheres.ElementAt(0).position.y, curtain.transform.position.z);
         particles.transform.position = new Vector3(particles.transform.position.x, spheres.ElementAt(0).position.y, particles.transform.position.z);
-        //if (Physics.Raycast(curtain.position, Vector3.down, out hit, 100))
-        //{
-        //    curtain.position -= new Vector3(0, hit.distance, 0);
-        //}
     }
 }
