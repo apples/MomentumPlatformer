@@ -153,3 +153,4 @@ MonoBehaviour:
   subScoreObject: {fileID: 3081493543205559248, guid: ab173df473b024b42b43e210afc4482a, type: 3}
   timePenaltyInterval: 1
   timePenaltyRampInterval: 10
+  scoreTimeValue: {fileID: 11400000, guid: 55e6d4c11af8b324e97aeb362aaa3694, type: 2}
