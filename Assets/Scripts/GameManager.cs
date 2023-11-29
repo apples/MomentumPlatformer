@@ -7,22 +7,48 @@ using UnityEngine;
 public class GameManager : MonoBehaviour
 {
     public SOUP.FloatValue enableTimerFlag;
-
     public SOUP.FloatValue torchTimer;
-
     public SOUP.FloatValue scoreTimeValue;
 
+    public SOUP.FloatValue currentGamemode;
+
     public Light sun;
+    public GameObject braziers;
+    public GameObject avalanche;
 
     private bool stopTimer = false;
 
-    public bool withCountdown = true;
+    //public bool withCountdown = true;
 
     private void Start()
     {
         torchTimer.Value = 10;
         scoreTimeValue.Value = 0;
-        enableTimerFlag.Value = withCountdown ? 1 : 0;
+        //enableTimerFlag.Value = withCountdown ? 1 : 0;
+
+        switch (currentGamemode.Value)
+        {
+            case (float)Globals.Gamemodes.SunSurival:
+                torchTimer.Value = 10;
+                scoreTimeValue.Value = 0;
+                braziers.SetActive(true);
+                avalanche.SetActive(false);
+                break;
+            case (float)Globals.Gamemodes.Avalanche:
+                avalanche.SetActive(true);
+                braziers.SetActive(false);
+                break;
+            case (float)Globals.Gamemodes.Score:
+                braziers.SetActive(false);
+                avalanche.SetActive(false);
+                break;
+            case (float)Globals.Gamemodes.All:
+                torchTimer.Value = 10;
+                scoreTimeValue.Value = 0;
+                braziers.SetActive(true);
+                avalanche.SetActive(true);
+                break;
+        }
     }
 
     private void LateUpdate()
@@ -31,11 +57,11 @@ public class GameManager : MonoBehaviour
         {
             stopTimer = !stopTimer;
         }
-        
+
         if (!stopTimer)
         {
             // Torch
-            if (enableTimerFlag.Value == 1)
+            if (currentGamemode.Value == (float)Globals.Gamemodes.SunSurival)
             {
                 torchTimer.Value = Mathf.Max(torchTimer.Value - Time.deltaTime, 0);
 

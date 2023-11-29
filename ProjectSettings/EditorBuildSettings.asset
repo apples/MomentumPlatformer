@@ -20,5 +20,8 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/Scenes/AvalanchGameplayScene.unity
     guid: 6acbe429f8d201d4d8ab6b4edbe9b898
+  - enabled: 1
+    path: Assets/Scenes/SnowMap2.unity
+    guid: df7bb343088d96a4781c061e4171e792
   m_configObjects:
     com.unity.input.settings: {fileID: 11400000, guid: 211915411eb753c45891200830469063, type: 2}

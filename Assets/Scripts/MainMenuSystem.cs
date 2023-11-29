@@ -7,6 +7,8 @@ public class MainMenuSystem : MonoBehaviour
 {
     [SerializeField] private SOUP.FloatValue enableTimerFlag;
     [SerializeField] private Camera camera;
+    public SOUP.FloatValue currentGamemode;
+    public SOUP.FloatValue currentLevel;
 
     private UnityEngine.UI.Button button;
 
@@ -67,6 +69,24 @@ public class MainMenuSystem : MonoBehaviour
         targetRot = new Quaternion(0.00837235432f, 0.282001048f, 0.0024609929f, 0.959374487f);
     }
 
+    public void SeeSecondLevel()
+    {
+        targetPos = new Vector3(270f, 160f, 145f);
+        targetRot = new Quaternion(0.0058444147f, -0.263087988f, -0.00648040092f, 0.964732468f);
+    }
+
+    public void SeeThirdLevel()
+    {
+        targetPos = new Vector3(215f, 323f, 187f);
+        targetRot = new Quaternion(0.136023045f, 0.117969982f, -0.019201776f, 0.983469367f);
+    }
+
+    public void SeeFourthLevel()
+    {
+        targetPos = new Vector3(268f, 247f, 161f);
+        targetRot = new Quaternion(0.0814888924f, -0.240383789f, 0.0134906787f, 0.967157304f);
+    }
+
     public void SeeHelp()
     {
         targetPos = new Vector3(1.62f, 1.23000002f, -6.25f);
@@ -80,11 +100,6 @@ public class MainMenuSystem : MonoBehaviour
         GameObject.FindGameObjectsWithTag("LevelButton").Where(x => x.name != button.name).ToList().ForEach(x => x.SetActive(false));
     }
 
-    public void PlayGame()
-    {
-        enableTimerFlag.Value = 1;
-        UnityEngine.SceneManagement.SceneManager.LoadScene("GameplayScene");
-    }
 
     public void PlayGameNoTimer()
     {
@@ -92,10 +107,74 @@ public class MainMenuSystem : MonoBehaviour
         UnityEngine.SceneManagement.SceneManager.LoadScene("GameplayScene");
     }
 
-    public void PlayGameAvalanche()
+    public void WinterSun()
     {
-        enableTimerFlag.Value = 0;
-        UnityEngine.SceneManagement.SceneManager.LoadScene("AvalanchGameplayScene");
+        currentGamemode.Value = (float)Globals.Gamemodes.SunSurival;
+        currentLevel.Value = (float)Globals.Levels.Snow;
+        UnityEngine.SceneManagement.SceneManager.LoadScene("SnowMap2");
+    }
+
+    public void WinterScore()
+    {
+        currentGamemode.Value = (float)Globals.Gamemodes.Score;
+        currentLevel.Value = (float)Globals.Levels.Snow;
+        UnityEngine.SceneManagement.SceneManager.LoadScene("SnowMap2");
+    }
+
+    public void WinterAvalanche()
+    {
+        currentGamemode.Value = (float)Globals.Gamemodes.Avalanche;
+        currentLevel.Value = (float)Globals.Levels.Snow;
+        UnityEngine.SceneManagement.SceneManager.LoadScene("SnowMap2");
+    }
+
+    public void WinterFull()
+    {
+        currentGamemode.Value = (float)Globals.Gamemodes.All;
+        currentLevel.Value = (float)Globals.Levels.Snow;
+        UnityEngine.SceneManagement.SceneManager.LoadScene("SnowMap2");
+    }
+
+    public void WinterZen()
+    {
+        currentGamemode.Value = (float)Globals.Gamemodes.None;
+        currentLevel.Value = (float)Globals.Levels.Snow;
+        UnityEngine.SceneManagement.SceneManager.LoadScene("SnowMap2");
+    }
+
+    public void JamSun()
+    {
+        currentGamemode.Value = (float)Globals.Gamemodes.SunSurival;
+        currentLevel.Value = (float)Globals.Levels.JamVersion;
+        UnityEngine.SceneManagement.SceneManager.LoadScene("GameplayScene");
+    }
+
+    public void JamScore()
+    {
+        currentGamemode.Value = (float)Globals.Gamemodes.Score;
+        currentLevel.Value = (float)Globals.Levels.JamVersion;
+        UnityEngine.SceneManagement.SceneManager.LoadScene("GameplayScene");
+    }
+
+    public void JamAvalanche()
+    {
+        currentGamemode.Value = (float)Globals.Gamemodes.Avalanche;
+        currentLevel.Value = (float)Globals.Levels.JamVersion;
+        UnityEngine.SceneManagement.SceneManager.LoadScene("GameplayScene");
+    }
+
+    public void JamFull()
+    {
+        currentGamemode.Value = (float)Globals.Gamemodes.All;
+        currentLevel.Value = (float)Globals.Levels.JamVersion;
+        UnityEngine.SceneManagement.SceneManager.LoadScene("GameplayScene");
+    }
+
+    public void JamZen()
+    {
+        currentGamemode.Value = (float)Globals.Gamemodes.None;
+        currentLevel.Value = (float)Globals.Levels.JamVersion;
+        UnityEngine.SceneManagement.SceneManager.LoadScene("GameplayScene");
     }
 
     public static Quaternion SmoothDampQ(Quaternion rot, Quaternion target, ref Quaternion deriv, float time)
