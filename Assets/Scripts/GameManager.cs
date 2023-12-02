@@ -15,6 +15,7 @@ public class GameManager : MonoBehaviour
     public Light sun;
     public GameObject braziers;
     public GameObject avalanche;
+    public GameObject scoreGoal;
 
     private bool stopTimer = false;
 
@@ -33,12 +34,15 @@ public class GameManager : MonoBehaviour
                 scoreTimeValue.Value = 0;
                 braziers.SetActive(true);
                 avalanche.SetActive(false);
+                scoreGoal.SetActive(false);
                 break;
             case (float)Globals.Gamemodes.Avalanche:
                 avalanche.SetActive(true);
                 braziers.SetActive(false);
+                scoreGoal.SetActive(false);
                 break;
             case (float)Globals.Gamemodes.Score:
+                scoreGoal.SetActive(true);
                 braziers.SetActive(false);
                 avalanche.SetActive(false);
                 break;
@@ -47,6 +51,7 @@ public class GameManager : MonoBehaviour
                 scoreTimeValue.Value = 0;
                 braziers.SetActive(true);
                 avalanche.SetActive(true);
+                scoreGoal.SetActive(true);
                 break;
         }
     }

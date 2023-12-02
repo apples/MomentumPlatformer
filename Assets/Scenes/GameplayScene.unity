@@ -1766,6 +1766,11 @@ RectTransform:
   m_CorrespondingSourceObject: {fileID: 3285403120661892249, guid: 8a9df470ff21121489fc75cd8b078faf, type: 3}
   m_PrefabInstance: {fileID: 623243575}
   m_PrefabAsset: {fileID: 0}
+--- !u!1 &623243577 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 6909152423141349780, guid: 8a9df470ff21121489fc75cd8b078faf, type: 3}
+  m_PrefabInstance: {fileID: 623243575}
+  m_PrefabAsset: {fileID: 0}
 --- !u!54 &647446632
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -3327,6 +3332,7 @@ MonoBehaviour:
   sun: {fileID: 705507994}
   braziers: {fileID: 6321363693109416413}
   avalanche: {fileID: 162228200}
+  scoreGoal: {fileID: 623243577}
 --- !u!114 &1479867101
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3777,6 +3783,17 @@ CapsuleCollider:
   m_Height: 0.0038105687
   m_Direction: 1
   m_Center: {x: 0, y: 0.0019052844, z: 0}
+--- !u!114 &1865644465 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 7235117397409814553, guid: 8a9df470ff21121489fc75cd8b078faf, type: 3}
+  m_PrefabInstance: {fileID: 623243575}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: af7cb29102c2ffc44a37cbeca37515ff, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &1892378383
 GameObject:
   m_ObjectHideFlags: 0
@@ -5255,19 +5272,19 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4286438622549371959, guid: 860d06fe789a208448a4d2401e23b280, type: 3}
       propertyPath: m_LocalRotation.w
-      value: 0.98910326
+      value: 0.9891032
       objectReference: {fileID: 0}
     - target: {fileID: 4286438622549371959, guid: 860d06fe789a208448a4d2401e23b280, type: 3}
       propertyPath: m_LocalRotation.x
-      value: 0.06294055
+      value: 0.06294056
       objectReference: {fileID: 0}
     - target: {fileID: 4286438622549371959, guid: 860d06fe789a208448a4d2401e23b280, type: 3}
       propertyPath: m_LocalRotation.y
-      value: -0.13282281
+      value: -0.13282286
       objectReference: {fileID: 0}
     - target: {fileID: 4286438622549371959, guid: 860d06fe789a208448a4d2401e23b280, type: 3}
       propertyPath: m_LocalRotation.z
-      value: 0.008452043
+      value: 0.008452051
       objectReference: {fileID: 0}
     - target: {fileID: 4541766938091290731, guid: 860d06fe789a208448a4d2401e23b280, type: 3}
       propertyPath: m_LocalEulerAnglesHint.x
@@ -5309,6 +5326,10 @@ PrefabInstance:
       propertyPath: boardShader
       value: 
       objectReference: {fileID: 1964132297}
+    - target: {fileID: 6653758533952557381, guid: 860d06fe789a208448a4d2401e23b280, type: 3}
+      propertyPath: scoreScript
+      value: 
+      objectReference: {fileID: 1865644465}
     - target: {fileID: 6653758533952557381, guid: 860d06fe789a208448a4d2401e23b280, type: 3}
       propertyPath: trickYawThreshold
       value: 147

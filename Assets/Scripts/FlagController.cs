@@ -11,12 +11,23 @@ using UnityEngine.VFX;
 public class FlagController : MonoBehaviour
 {
     [SerializeField] private SOUP.Event onWin;
+    [SerializeField] private SOUP.Event onLose;
+    [SerializeField] private SOUP.FloatValue gameMode;
+    [SerializeField] private SOUP.FloatValue score;
+    [SerializeField] private SOUP.FloatValue scoreGoal;
 
     private void OnTriggerEnter(Collider other)
     {
         if (other.gameObject.GetComponent<PlayerController>() is PlayerController player)
         {
-            onWin.Raise();
+            if((gameMode.Value != (float)Globals.Gamemodes.Score && gameMode.Value != (float)Globals.Gamemodes.All) || score.Value > scoreGoal.Value)
+            {
+                onWin.Raise();
+            }
+            else
+            {
+                onLose.Raise();
+            }
         }
     }
 }

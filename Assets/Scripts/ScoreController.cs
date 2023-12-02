@@ -10,11 +10,14 @@ public class ScoreController : MonoBehaviour
     public FloatValue currentScore;
     public TextMeshProUGUI baseText;
     public GameObject subScoreObject;
+    public TextMeshProUGUI scoreGoalText;
 
     public float timePenaltyInterval = 1;
     public float timePenaltyRampInterval = 10;
 
     public SOUP.FloatValue scoreTimeValue;
+    public SOUP.FloatValue scoreGoal;
+    public SOUP.FloatValue currentGamemode;
 
     private float penaltyTimer;
     private List<SubScore> subScores = new List<SubScore>();
@@ -22,7 +25,6 @@ public class ScoreController : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
-        currentScore.Value = 100; //for testing
         penaltyTimer = 0;
     }
 
@@ -41,6 +43,7 @@ public class ScoreController : MonoBehaviour
         }
 
         baseText.text = "Score: " + currentScore.Value.ToString("00000");
+        scoreGoalText.text = "/" + scoreGoal.Value.ToString("00000");
 
         foreach (SubScore subScore in subScores)
         {
@@ -48,6 +51,15 @@ public class ScoreController : MonoBehaviour
         }
         subScores.FindAll(x => x.isDeletable).ForEach(y => Destroy(y.baseObject));
         subScores.RemoveAll(x => x.isDeletable);
+
+        if(currentScore.Value > scoreGoal.Value)
+        {
+            scoreGoalText.color = Color.green;
+        }
+        else
+        {
+            scoreGoalText.color = Color.white;
+        }
     }
 
 
@@ -63,8 +75,16 @@ public class ScoreController : MonoBehaviour
         newSubScoreStruct.value = newSubScore.GetComponentsInChildren<TextMeshProUGUI>()[1];
         newSubScoreStruct.value.text = "+" + score;
         newSubScoreStruct.baseObject.transform.localPosition = new Vector3(210, -40, 0);
-        newSubScoreStruct.lerpFrom = new Vector3(210, -40, 0);
-        newSubScoreStruct.lerpTo = new Vector3(-155, -40, 0);
+        if(currentGamemode.Value == (float)Globals.Gamemodes.Score || currentGamemode.Value == (float)Globals.Gamemodes.All)
+        {
+            newSubScoreStruct.lerpFrom = new Vector3(210, -75, 0);
+            newSubScoreStruct.lerpTo = new Vector3(-155, -75, 0);
+        }
+        else
+        {
+            newSubScoreStruct.lerpFrom = new Vector3(210, -40, 0);
+            newSubScoreStruct.lerpTo = new Vector3(-155, -40, 0);
+        }
 
         foreach (SubScore subScore in subScores)
         {
