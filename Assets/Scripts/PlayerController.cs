@@ -513,12 +513,14 @@ public class PlayerController : MonoBehaviour
 
                 if (Mathf.Abs(trickYaw) > trickYawThreshold)
                 {
+                    //SFX here
                     spinTrickCharges++;
                     trickYaw = 0;
                     boardShader.material.color = Color.HSVToRGB((176 + (40 * spinTrickCharges)) / 360.0f, 1, .75f) * 2.7f;
                 }
                 if(Mathf.Abs(trickPitch) > trickPitchThreshold)
                 {
+                    //SFX here
                     flipTrickCharges++;
                     isFlipForward = trickPitch > 0;
                     trickPitch = 0;

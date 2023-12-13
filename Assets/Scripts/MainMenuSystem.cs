@@ -1,5 +1,7 @@
+using Newtonsoft.Json;
 using System.Collections;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using UnityEngine;
 
@@ -9,6 +11,7 @@ public class MainMenuSystem : MonoBehaviour
     [SerializeField] private Camera camera;
     public SOUP.FloatValue currentGamemode;
     public SOUP.FloatValue currentLevel;
+    public GameObject trophyParent;
 
     private UnityEngine.UI.Button button;
 
@@ -33,7 +36,47 @@ public class MainMenuSystem : MonoBehaviour
             DontDestroyOnLoad(GameObject.Find("IntroMusic"));
             DontDestroyOnLoad(GameObject.Find("Music"));
         }
-        
+
+        string path = Application.persistentDataPath + "\\SaveData.txt";
+        List<List<bool>> saveData = new List<List<bool>>();
+
+        if (File.Exists(path))
+        {
+            string fileString = "";
+            using (StreamReader sr = File.OpenText(path))
+            {
+                fileString = sr.ReadToEnd();
+            }
+
+            saveData = JsonConvert.DeserializeObject<List<List<bool>>>(fileString);
+        }
+
+        List<GameObject> trophies = trophyParent.transform.GetComponentsInChildren<Transform>(true).Select(x => x.gameObject).ToList();
+
+        int temp = 1;
+        foreach (List<bool> item in saveData)
+        {
+            foreach (bool isCleared in item)
+            {
+                trophies[temp].SetActive(isCleared);
+                temp++;
+            }
+        }
+
+        switch (currentLevel.Value)
+        {
+            case (int)Globals.Levels.Snow:
+                SeeFirstLevel();
+                break;
+            case (int)Globals.Levels.JamVersion:
+                SeeSecondLevel();
+                break;
+            case (int)Globals.Levels.Endless:
+                SeeThirdLevel();
+                break;
+            default:
+                break;
+        }
     }
 
     public void Update()

@@ -1,7 +1,10 @@
+using Newtonsoft.Json;
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Text;
 using UnityEngine;
 
 public class GameManager : MonoBehaviour
@@ -11,6 +14,7 @@ public class GameManager : MonoBehaviour
     public SOUP.FloatValue scoreTimeValue;
 
     public SOUP.FloatValue currentGamemode;
+    public SOUP.FloatValue currentLevel;
 
     public Light sun;
     public GameObject braziers;
@@ -88,6 +92,7 @@ public class GameManager : MonoBehaviour
         stopTimer = true;
         scoreTimeValue.Value = 0;
         StartCoroutine(WinCoroutine());
+        SaveGame();
     }
 
     public void Lose()
@@ -109,5 +114,46 @@ public class GameManager : MonoBehaviour
         Debug.Log("You lose!");
         yield return new WaitForSeconds(3);
         UnityEngine.SceneManagement.SceneManager.LoadScene("Lose");
+    }
+
+    private void SaveGame()
+    {
+        string path = Application.persistentDataPath + "\\SaveData.txt";
+        List<List<bool>> saveData = new List<List<bool>>();
+
+        if (File.Exists(path))
+        {
+            string fileString = "";
+            using (StreamReader sr = File.OpenText(path))
+            {
+                fileString = sr.ReadToEnd();
+            }
+
+            saveData = JsonConvert.DeserializeObject<List<List<bool>>>(fileString);
+            saveData[(int)currentLevel.Value][(int)currentGamemode.Value] = true;
+        }
+        else
+        {
+            for(int i = 0; i < Enum.GetNames(typeof(Globals.Levels)).Length; i++)
+            {
+                saveData.Add(new List<bool>());
+                for (int j = 0; j < Enum.GetNames(typeof(Globals.Gamemodes)).Length; j++)
+                {
+                    if(i == currentLevel.Value && j == currentGamemode.Value)
+                    {
+                        saveData[i].Add(true);
+                    }
+                    else
+                    {
+                        saveData[i].Add(false);
+                    }
+                }
+            }
+        }
+
+        using (StreamWriter sw = File.CreateText(path))
+        {
+            sw.Write(Newtonsoft.Json.JsonConvert.SerializeObject(saveData));
+        }
     }
 }

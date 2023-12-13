@@ -567,6 +567,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: Avalanche
       objectReference: {fileID: 0}
+    - target: {fileID: 5776741857452532093, guid: 049c24d8a624cd04d94a462951febb5e, type: 3}
+      propertyPath: player
+      value: 
+      objectReference: {fileID: 672691130}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -575,6 +579,16 @@ PrefabInstance:
 --- !u!1 &162228200 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 5262628686802769725, guid: 049c24d8a624cd04d94a462951febb5e, type: 3}
+  m_PrefabInstance: {fileID: 162228199}
+  m_PrefabAsset: {fileID: 0}
+--- !u!82 &162228201 stripped
+AudioSource:
+  m_CorrespondingSourceObject: {fileID: 9086304419073662146, guid: 049c24d8a624cd04d94a462951febb5e, type: 3}
+  m_PrefabInstance: {fileID: 162228199}
+  m_PrefabAsset: {fileID: 0}
+--- !u!4 &162228203 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 782839118752888741, guid: 049c24d8a624cd04d94a462951febb5e, type: 3}
   m_PrefabInstance: {fileID: 162228199}
   m_PrefabAsset: {fileID: 0}
 --- !u!224 &171338703 stripped
@@ -1867,6 +1881,11 @@ CapsuleCollider:
   m_Height: 0.0039552464
   m_Direction: 1
   m_Center: {x: 0, y: 0.0019776232, z: 0}
+--- !u!4 &672691130 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 6653758533952557382, guid: 860d06fe789a208448a4d2401e23b280, type: 3}
+  m_PrefabInstance: {fileID: 6653758535206801670}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1001 &673636578
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -5272,19 +5291,19 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4286438622549371959, guid: 860d06fe789a208448a4d2401e23b280, type: 3}
       propertyPath: m_LocalRotation.w
-      value: 0.9891032
+      value: 0.98910326
       objectReference: {fileID: 0}
     - target: {fileID: 4286438622549371959, guid: 860d06fe789a208448a4d2401e23b280, type: 3}
       propertyPath: m_LocalRotation.x
-      value: 0.06294056
+      value: 0.06294055
       objectReference: {fileID: 0}
     - target: {fileID: 4286438622549371959, guid: 860d06fe789a208448a4d2401e23b280, type: 3}
       propertyPath: m_LocalRotation.y
-      value: -0.13282286
+      value: -0.13282281
       objectReference: {fileID: 0}
     - target: {fileID: 4286438622549371959, guid: 860d06fe789a208448a4d2401e23b280, type: 3}
       propertyPath: m_LocalRotation.z
-      value: 0.008452051
+      value: 0.008452043
       objectReference: {fileID: 0}
     - target: {fileID: 4541766938091290731, guid: 860d06fe789a208448a4d2401e23b280, type: 3}
       propertyPath: m_LocalEulerAnglesHint.x
@@ -5294,6 +5313,10 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.y
       value: 8.59299e-31
       objectReference: {fileID: 0}
+    - target: {fileID: 4878112636586098815, guid: 860d06fe789a208448a4d2401e23b280, type: 3}
+      propertyPath: onLose
+      value: 
+      objectReference: {fileID: 11400000, guid: 12d205b3a6e3d6c4d9e21a35a47eb40b, type: 2}
     - target: {fileID: 5450597502140452419, guid: 860d06fe789a208448a4d2401e23b280, type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
@@ -5323,6 +5346,10 @@ PrefabInstance:
       value: Player
       objectReference: {fileID: 0}
     - target: {fileID: 6653758533952557381, guid: 860d06fe789a208448a4d2401e23b280, type: 3}
+      propertyPath: avalanche
+      value: 
+      objectReference: {fileID: 162228203}
+    - target: {fileID: 6653758533952557381, guid: 860d06fe789a208448a4d2401e23b280, type: 3}
       propertyPath: boardShader
       value: 
       objectReference: {fileID: 1964132297}
@@ -5330,6 +5357,10 @@ PrefabInstance:
       propertyPath: scoreScript
       value: 
       objectReference: {fileID: 1865644465}
+    - target: {fileID: 6653758533952557381, guid: 860d06fe789a208448a4d2401e23b280, type: 3}
+      propertyPath: avalancheSfx
+      value: 
+      objectReference: {fileID: 162228201}
     - target: {fileID: 6653758533952557381, guid: 860d06fe789a208448a4d2401e23b280, type: 3}
       propertyPath: trickYawThreshold
       value: 147
