@@ -13,6 +13,12 @@ public class MainMenuSystem : MonoBehaviour
     public SOUP.FloatValue currentLevel;
     public GameObject trophyParent;
 
+    //public GameObject firstLevelForwardButton;
+    //public GameObject secondLevelForwardButton;
+    //public GameObject thirdLevelForwardButton;
+    //public GameObject fourthLevelForwardButton;
+    public List<GameObject> forwardButtons;
+
     private UnityEngine.UI.Button button;
 
     private Vector3 velocity = Vector3.zero;
@@ -54,14 +60,38 @@ public class MainMenuSystem : MonoBehaviour
         List<GameObject> trophies = trophyParent.transform.GetComponentsInChildren<Transform>(true).Select(x => x.gameObject).ToList();
 
         int temp = 1;
+        int level = 0;
         foreach (List<bool> item in saveData)
         {
+            int totalCleared = 0;
             foreach (bool isCleared in item)
             {
                 trophies[temp].SetActive(isCleared);
                 temp++;
+                if (isCleared)
+                {
+                    totalCleared++;
+                }
             }
+            if (totalCleared >= 3)
+            {
+                forwardButtons[level].SetActive(true);
+                if (totalCleared == 3)
+                {
+                    forwardButtons[level].transform.GetChild(1).gameObject.SetActive(true);
+                }
+                else
+                {
+                    forwardButtons[level].transform.GetChild(1).gameObject.SetActive(false);
+                }
+            }
+            else
+            {
+                forwardButtons[level].SetActive(false);
+            }
+            level++;
         }
+        
 
         switch (currentLevel.Value)
         {
