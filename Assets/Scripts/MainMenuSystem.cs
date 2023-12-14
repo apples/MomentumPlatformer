@@ -13,10 +13,6 @@ public class MainMenuSystem : MonoBehaviour
     public SOUP.FloatValue currentLevel;
     public GameObject trophyParent;
 
-    //public GameObject firstLevelForwardButton;
-    //public GameObject secondLevelForwardButton;
-    //public GameObject thirdLevelForwardButton;
-    //public GameObject fourthLevelForwardButton;
     public List<GameObject> forwardButtons;
 
     private UnityEngine.UI.Button button;
