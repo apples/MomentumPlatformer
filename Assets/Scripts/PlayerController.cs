@@ -616,6 +616,11 @@ public class PlayerController : MonoBehaviour
         velocity = Vector3.zero;
         ragdollVCam.Priority = 20;
         boardSfx.volume = 0;
+
+        spinTrickCharges = 0;
+        flipTrickCharges = 0;
+        boardShader.material.color = Color.HSVToRGB(176 / 360.0f, 1, .75f) * 2.7f;
+        boardShader.material.SetFloat(boardIntensityPropertyId, 1);
     }
 
     private void UpdateRagdoll()
@@ -664,16 +669,6 @@ public class PlayerController : MonoBehaviour
         {
             groundSensed = false;
         }
-
-        // tumble
-        // if (isSliding && !groundSensed && CastBodyCollider(rigidbody.position, rigidbody.rotation, rigidbody.rotation * Vector3.up, groundSenseDistance, out var headHit))
-        // {
-        //     if (headHit.point != Vector3.zero)
-        //     {
-        //         StartRagdoll();
-        //         return;
-        //     }
-        // }
 
         // flag
         isGrounded = groundSensed;
@@ -866,6 +861,11 @@ public class PlayerController : MonoBehaviour
             {
                 remainingMotion = Vector3.ProjectOnPlane(remainingMotion, trueNormal).normalized * remainingMotion.magnitude;
                 velocity = Vector3.ProjectOnPlane(velocity, trueNormal).normalized * velocity.magnitude;
+            }
+
+            if(isSliding && Vector3.Dot(trueNormal, transform.up) < 0 )
+            {
+                StartRagdoll();
             }
         }
 

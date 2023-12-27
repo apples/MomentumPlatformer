@@ -13,3 +13,4 @@ MonoBehaviour:
   m_Name: ScoreTime
   m_EditorClassIdentifier: 
   initialValue: 0
+  dontUnloadWhenUnused: 0
