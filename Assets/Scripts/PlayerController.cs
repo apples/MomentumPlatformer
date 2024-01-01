@@ -78,6 +78,7 @@ public class PlayerController : MonoBehaviour
     [SerializeField] private float skidSfxMinSpeed = 1f;
     [SerializeField] private float skidSfxMaxSpeed = 100f;
     [SerializeField] private float skidSfxDebounceTime = 0.1f;
+    [SerializeField] private AudioSource trickSFX;
 
     [Header("Avalanche Audio")]
     [SerializeField] private AudioSource avalancheSfx;
@@ -513,14 +514,16 @@ public class PlayerController : MonoBehaviour
 
                 if (Mathf.Abs(trickYaw) > trickYawThreshold)
                 {
-                    //SFX here
+                    trickSFX.pitch = MathF.Pow(1.059463f, (spinTrickCharges + flipTrickCharges));
+                    trickSFX.Play();
                     spinTrickCharges++;
                     trickYaw = 0;
                     boardShader.material.color = Color.HSVToRGB((176 + (40 * spinTrickCharges)) / 360.0f, 1, .75f) * 2.7f;
                 }
                 if(Mathf.Abs(trickPitch) > trickPitchThreshold)
                 {
-                    //SFX here
+                    trickSFX.pitch = MathF.Pow(1.059463f, (spinTrickCharges + flipTrickCharges));
+                    trickSFX.Play();
                     flipTrickCharges++;
                     isFlipForward = trickPitch > 0;
                     trickPitch = 0;
